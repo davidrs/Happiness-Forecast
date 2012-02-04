@@ -1,0 +1,69 @@
+﻿<phone:PhoneApplicationPage 
+    x:Class="TwitterArt.MainPage"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:phone="clr-namespace:Microsoft.Phone.Controls;assembly=Microsoft.Phone"
+    xmlns:shell="clr-namespace:Microsoft.Phone.Shell;assembly=Microsoft.Phone"
+    xmlns:controls="clr-namespace:Microsoft.Phone.Controls;assembly=Microsoft.Phone.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="768" 
+    d:DataContext="{d:DesignData SampleData/MainViewModelSampleData.xaml}"
+    FontFamily="{StaticResource PhoneFontFamilyNormal}"
+    FontSize="{StaticResource PhoneFontSizeNormal}"
+    Foreground="{StaticResource PhoneForegroundBrush}"
+    SupportedOrientations="PortraitOrLandscape"  Orientation="Portrait"
+    shell:SystemTray.IsVisible="True">
+
+    <!--LayoutRoot is the root grid where all page content is placed-->
+    <Grid x:Name="LayoutRoot" Background="Transparent">
+        <!--Pivot Control-->
+        <controls:Pivot Title="Happiness Forecast">
+            <!--Pivot item one-->
+            <controls:PivotItem Header="Forecast">
+                <Grid Name="grid1" VerticalAlignment="Top" >
+                        <Image Margin="0,0,0,0" Name="imageForecast" Stretch="None" VerticalAlignment="Top" HorizontalAlignment="Center" />
+                    </Grid>
+                    <!--<TextBlock HorizontalAlignment="Left" Margin="9,84,0,0" Name="textBlock2" Text="" VerticalAlignment="Top" Width="434" />-->
+            </controls:PivotItem>
+            
+            <!--Pivot item 2-->
+            <controls:PivotItem Header="History">
+                <Grid Name="historyGrid">
+
+                </Grid>
+            </controls:PivotItem>
+            
+            <!--Pivot item 3-->
+            <controls:PivotItem Header="Sample">                
+                    <ScrollViewer HorizontalAlignment="Left" Margin="0,0,0,0" Name="stackPanel2" VerticalAlignment="Top">
+                        <TextBlock x:Name="textBlockSample" TextWrapping="Wrap" FontSize="26"  />
+                    </ScrollViewer>          
+            </controls:PivotItem>
+            
+            <!--Pivot item 4-->
+            <controls:PivotItem Header="Settings">
+                <Grid>
+                    <Button Content="Run Forecast" Height="72" Name="button1" VerticalAlignment="Top"  Click="button1_Click" Margin="0,6,0,0" HorizontalAlignment="Stretch" />
+                    <TextBox Height="72" HorizontalAlignment="Stretch" Margin="146,116,0,0" Name="textBox1" Text="I%20Feel" VerticalAlignment="Top"  TextChanged="textBox1_TextChanged" Width="307" />
+                    <TextBlock Height="72" HorizontalAlignment="Left" Margin="6,116,0,0" Name="textBlock1" Text="Search Text:" VerticalAlignment="Top" Width="136" FontSize="26" Padding="0,18,0,0" />
+                    <TextBlock Height="63" HorizontalAlignment="Stretch" Margin="6,223,27,0" Name="textBlockGPS" Text="GPS: Initializing..." VerticalAlignment="Top" FontSize="26" />
+                </Grid>
+            </controls:PivotItem>
+        
+        </controls:Pivot>
+    </Grid>
+ 
+    <!--Sample code showing usage of ApplicationBar-->
+    <!--<phone:PhoneApplicationPage.ApplicationBar>
+        <shell:ApplicationBar IsVisible="True" IsMenuEnabled="True">
+            <shell:ApplicationBarIconButton IconUri="/Images/appbar_button1.png" Text="Button 1"/>
+            <shell:ApplicationBarIconButton IconUri="/Images/appbar_button2.png" Text="Button 2"/>
+            <shell:ApplicationBar.MenuItems>
+                <shell:ApplicationBarMenuItem Text="MenuItem 1"/>
+                <shell:ApplicationBarMenuItem Text="MenuItem 2"/>
+            </shell:ApplicationBar.MenuItems>
+        </shell:ApplicationBar>
+    </phone:PhoneApplicationPage.ApplicationBar>-->
+
+</phone:PhoneApplicationPage>
