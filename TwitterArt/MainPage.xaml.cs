@@ -443,7 +443,8 @@ namespace TwitterArt
             // Update the TextBlocks to show the current location
             latitude = e.Position.Location.Latitude.ToString("0.00000");
             longitude = e.Position.Location.Longitude.ToString("0.00000");
-            useGPS = true;
+           //TODO: commented out until settings has gps options 
+            // useGPS = true;
 
             //Do first forecast
             startForecast();    
