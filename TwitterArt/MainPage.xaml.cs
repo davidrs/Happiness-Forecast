@@ -19,6 +19,13 @@ using System.Windows.Media.Imaging; // BitmapImage
 using System.Windows.Resources; // StreamResourceInfo
 using System.Device.Location;
 
+//For JSON deserlization to object
+using Newtonsoft.Json.Linq;
+
+//Search api https://dev.twitter.com/docs/api/1/get/search
+//SEARCH API https://dev.twitter.com/docs/using-search
+
+
 
 namespace TwitterArt
 {
@@ -29,9 +36,18 @@ namespace TwitterArt
         string[] angryWords = new string[] { "angry", "mad", "hate", "frown", "pissed", "stupid", "annoying", "shit", "fuck", "asshole", "dick","pussy","cunt" };
         string[] sadWords = new string[] { "sad", "depressed", ":(", ":'(", ":-(", "lonely", "crying", "gloom", "morose", "sorrow", "abject", "dejected", "dismal", "moping", "glum", "unhappy" };
 
-        string allIds, tmpTweet, latitude, longitude;
-        string[] sampleTweets = new string[numEmotions];
+        //v1
+        string latitude, longitude;
+        List<TwitterItem> sampleTweets = new List<TwitterItem>();
         int[] bestTweet = new int[numEmotions]{0,0,0,0};
+
+        //v2
+        /*
+        List<TwitterItem> sadTweets = new List<TwitterItem>();
+        List<TwitterItem> happyTweets = new List<TwitterItem>();
+        List<TwitterItem> angryTweets = new List<TwitterItem>();
+        List<TwitterItem> nuetralTweets = new List<TwitterItem>();
+         * */
 
         //assuming 4 days of results used 
         const int numDays = 4;
@@ -39,7 +55,7 @@ namespace TwitterArt
         //each row corresponds to enum TweetType
         int[,] tweetTypeCount = new int[4,4] { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
  
-        enum TweetType { Happy, Angry, Sad, Nuetral };
+        public enum TweetType { Happy, Angry, Sad, Nuetral };
         TweetType forecast = TweetType.Nuetral;
 
         int today = DateTime.Now.Day;
@@ -101,7 +117,7 @@ namespace TwitterArt
             searchDay = numDays;
             tweetTypeCount = new int[4, 4] { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
 
-            sampleTweets = new string[numEmotions] { "", "", "", "" };
+            //sampleTweets = new string[numEmotions] { "", "", "", "" };
             bestTweet = new int[numEmotions] { 0, 0, 0, 0 };
 
             geocode = "";
@@ -121,70 +137,77 @@ namespace TwitterArt
         {
             if (e.Error != null)
             {
-                //videoFailHandler(e.Error, e.UserState);
+                return; //ToDo: better error handling. print a message
             }
             else
             {
                 string twitterResults = e.Result;
 
-                int startOfTweet = 0;
-                int endOfTweet = 1;                
+                JObject root = JObject.Parse(e.Result);
 
-                startOfTweet = twitterResults.IndexOf("\"text\":");
-                while (startOfTweet >= 0)
+                JArray tweetsJArray = JArray.Parse(root["results"].ToString());//e.Result);
+
+                List<TwitterItem> tweets = new List<TwitterItem>();
+
+                foreach (JObject tweet in tweetsJArray)
                 {
+                    TwitterItem tempTweet = new TwitterItem();
+                    tempTweet.ImageSource = (tweet["profile_image_url"]).ToString();
+                    tempTweet.Message = tweet["text"].ToString();
+                    tempTweet.Username = (tweet["from_user"]).ToString();
+                    tempTweet.Created_at = (tweet["created_at"]).ToString();
 
-                    startOfTweet = twitterResults.IndexOf("text\":");
-
-                    //get tweets
-                    startOfTweet += 6;
-                    endOfTweet = twitterResults.IndexOf("to_user", startOfTweet) - 3;
-                    tmpTweet=twitterResults.Substring(startOfTweet, (endOfTweet - startOfTweet));
-
+                    //Set mood and mood score
                     //decide if this tweet is angry, sad, or happy
-                   tmpHappy= wordCount(happyWords, tmpTweet);
-                   tmpAngry= wordCount(angryWords, tmpTweet);
-                   tmpSad   =wordCount(sadWords, tmpTweet);
+                    tmpHappy = wordCount(happyWords, tempTweet.Message);
+                    tmpAngry = wordCount(angryWords, tempTweet.Message);
+                    tmpSad = wordCount(sadWords, tempTweet.Message);
 
-                   if (tmpHappy == tmpAngry && tmpHappy == tmpSad)
-                   {
-                       tweetTypeCount[(int)TweetType.Nuetral,numDays - searchDay]++;
-                       if (tmpHappy==0)
-                       {                           
-                           sampleTweets[(int)TweetType.Nuetral] = tmpTweet;
-                       }
-                   }
-                   else if (tmpHappy >= tmpAngry && tmpHappy >= tmpSad) //ordering of ifs skews to favour happy: ie. happy:2 angry:2 sad:1 would be happy
-                   {
-                       tweetTypeCount[(int)TweetType.Happy, numDays - searchDay]++;
-                       if (bestTweet[(int)TweetType.Happy] <tmpHappy)
-                       {                           
-                           sampleTweets[(int)TweetType.Happy] = tmpTweet;
-                           bestTweet[(int)TweetType.Happy] = tmpHappy;
-                       }
-                   }
-                   else if (tmpAngry >= tmpHappy && tmpAngry >= tmpSad)
-                   {
-                       tweetTypeCount[(int)TweetType.Angry, numDays - searchDay]++;
-                       if (bestTweet[(int)TweetType.Angry] < tmpAngry)
-                       {
-                           sampleTweets[(int)TweetType.Angry] = tmpTweet;
-                           bestTweet[(int)TweetType.Angry] = tmpAngry;
-                       }
-                   }
-                   else if (tmpSad >= tmpHappy && tmpSad >= tmpAngry)
-                   {
-                       tweetTypeCount[(int)TweetType.Sad, numDays - searchDay]++;
-                       if (bestTweet[(int)TweetType.Sad] < tmpSad)
-                       {
-                           sampleTweets[(int)TweetType.Sad] = tmpTweet;
-                           bestTweet[(int)TweetType.Sad] = tmpSad;
-                       }
-                   }
+                    if (tmpHappy == tmpAngry && tmpHappy == tmpSad)
+                    {
+                        tweetTypeCount[(int)TweetType.Nuetral, numDays - searchDay]++;
+                        tempTweet.Mood = TweetType.Nuetral;
+                        tempTweet.MoodScore = tmpHappy; //all tmps equal so just choose arbitrary one
+                        if (tmpHappy == 0)
+                        {
+                            sampleTweets.Add( tempTweet); //nuetral ones are added to the end of samples
+                        }
+                    }
+                    else if (tmpHappy >= tmpAngry && tmpHappy >= tmpSad) //ordering of ifs skews to favour happy: ie. happy:2 angry:2 sad:1 would be happy
+                    {
+                        tweetTypeCount[(int)TweetType.Happy, numDays - searchDay]++;
+                        tempTweet.Mood = TweetType.Happy;
+                        tempTweet.MoodScore = tmpHappy;
+                        if (bestTweet[(int)TweetType.Happy] < tmpHappy)
+                        {
+                            sampleTweets.Insert(0, tempTweet); ;
+                            bestTweet[(int)TweetType.Happy] = tmpHappy;
+                        }
+                    }
+                    else if (tmpAngry >= tmpHappy && tmpAngry >= tmpSad)
+                    {
+                        tweetTypeCount[(int)TweetType.Angry, numDays - searchDay]++;
+                        tempTweet.Mood = TweetType.Angry;
+                        tempTweet.MoodScore = tmpAngry;
+                        if (bestTweet[(int)TweetType.Angry] < tmpAngry)
+                        {
+                            sampleTweets.Insert(0, tempTweet);
+                            bestTweet[(int)TweetType.Angry] = tmpAngry;
+                        }
+                    }
+                    else if (tmpSad >= tmpHappy && tmpSad >= tmpAngry)
+                    {
+                        tweetTypeCount[(int)TweetType.Sad, numDays - searchDay]++;
+                        tempTweet.Mood = TweetType.Sad;
+                        tempTweet.MoodScore = tmpSad;
+                        if (bestTweet[(int)TweetType.Sad] < tmpSad)
+                        {
+                            sampleTweets.Insert(0,tempTweet);
+                            bestTweet[(int)TweetType.Sad] = tmpSad;
+                        }
+                    }
 
-                    //move on to the next tweet
-                    twitterResults = twitterResults.Substring(endOfTweet + 20);//atleast 20 char before next text                      
-                    startOfTweet = twitterResults.IndexOf("\"text\":");
+                     tempTweet.ImageMood= "Images/" + tempTweet.Mood.ToString().ToLower() + "Facesm.png";
                 }
 
                 if (searchDay > 1)
@@ -268,8 +291,6 @@ namespace TwitterArt
             BitmapImage bmp = new BitmapImage();
             bmp.SetSource(resourceInfo.Stream);
 
-            //imageForecast.Stretch = Stretch.Uniform;
-            //imageForecast.MaxHeight = grid1.ActualHeight;
             imageForecast.Source = bmp;            
         }
 
@@ -339,10 +360,16 @@ namespace TwitterArt
 
         private void doSamples()
         {
-            textBlockSample.Text = "Happy: " + sampleTweets[(int)TweetType.Happy];
-            textBlockSample.Text += "\n\nAngry: " + sampleTweets[(int)TweetType.Angry];
-            textBlockSample.Text += "\n\nSad: " + sampleTweets[(int)TweetType.Sad];
-            textBlockSample.Text += "\n\nNuetral: " + sampleTweets[(int)TweetType.Nuetral];
+            /*
+            textBlockSample.Text = "Happy: " + sampleTweets[(int)TweetType.Happy].Message;
+            textBlockSample.Text += "\n\nAngry: " + sampleTweets[(int)TweetType.Angry].Message;
+            textBlockSample.Text += "\n\nSad: " + sampleTweets[(int)TweetType.Sad].Message;
+            textBlockSample.Text += "\n\nNuetral: " + sampleTweets[(int)TweetType.Nuetral].Message;
+            */
+
+            listBox1.ItemsSource = sampleTweets;
+          
+            
         }
 
         private void textBox1_TextChanged(object sender, TextChangedEventArgs e)

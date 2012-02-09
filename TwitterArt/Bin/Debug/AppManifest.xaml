@@ -2,5 +2,6 @@
   <Deployment.Parts>
     <AssemblyPart x:Name="TwitterArt" Source="TwitterArt.dll" />
     <AssemblyPart x:Name="Microsoft.Phone.Controls" Source="Microsoft.Phone.Controls.dll" />
+    <AssemblyPart x:Name="Newtonsoft.Json" Source="Newtonsoft.Json.dll" />
   </Deployment.Parts>
 </Deployment>

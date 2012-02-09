@@ -53,6 +53,9 @@
     <Reference Include="Microsoft.Phone.Controls, Version=7.0.0.0, Culture=neutral, PublicKeyToken=24eec0d8c86cda1e, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.Phone.Interop" />
     <Reference Include="Microsoft.Phone.Reactive" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\WP7AccessTwitterAPI\AccessTwitterAPI\Bin\Debug\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System.Device" />
     <Reference Include="System.Windows" />
     <Reference Include="system" />
@@ -66,6 +69,7 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="TwitterItem.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
