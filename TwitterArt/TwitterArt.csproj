@@ -99,18 +99,25 @@
     <Content Include="Images\angryFace.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Resource Include="Images\angryFacesm.png" />
     <Content Include="Images\happyFace.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Resource Include="Images\happyFacesm.png" />
     <Content Include="Images\loadingFace.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Resource Include="Images\loadingFacesm.png" />
     <Content Include="Images\nuetralFace.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Resource Include="Images\nuetralFacesm.png" />
     <Content Include="Images\sadFace.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Resource Include="Images\sadFacesm.png" />
+    <Resource Include="Images\tile.png" />
+    <Resource Include="Images\tileSm.png" />
     <Content Include="SplashScreenImage.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

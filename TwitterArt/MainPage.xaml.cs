@@ -1,4 +1,8 @@
 ﻿using System;
+using System.IO;
+using System.IO.IsolatedStorage;
+using System.Windows;
+
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -21,11 +25,33 @@ using System.Device.Location;
 
 //For JSON deserlization to object
 using Newtonsoft.Json.Linq;
+using System.Windows.Navigation;
 
 //Search api https://dev.twitter.com/docs/api/1/get/search
 //SEARCH API https://dev.twitter.com/docs/using-search
 
-
+/*
+ * 
+ * 
+ * 
+ * 
+ * 
+ * SETUP TO GRAB NEXT PAGE BASED ON IDs to prevent duplicates
+ * Setup to do just one day, and group based on hour intervals...but would still be top heavy in time. 
+ *  !!maybe do ratio at each hour, so comparing moods to eachother, instead of against themselves at different points in time.
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
 
 namespace TwitterArt
 {
@@ -48,11 +74,11 @@ namespace TwitterArt
         List<TwitterItem> angryTweets = new List<TwitterItem>();
         List<TwitterItem> nuetralTweets = new List<TwitterItem>();
          * */
-
+        //Todo: switch to 5 pages from just 1 day.
         //assuming 4 days of results used 
         const int numDays = 4;
         int lineHeightMultiplier;
-        //each row corresponds to enum TweetType
+        //each row corresponds to enum TweetType, col is time interval
         int[,] tweetTypeCount = new int[4,4] { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
  
         public enum TweetType { Happy, Angry, Sad, Nuetral };
@@ -62,6 +88,11 @@ namespace TwitterArt
         int month = DateTime.Now.Month;
         int tmpHappy,  tmpAngry, tmpSad;
         int searchDay = numDays;
+        int GETpage = 1;
+        const int pagesPerIteration = 1;
+        const int numPages = 3;
+
+        string searchString="";
 
         string sinceId;
         
@@ -73,6 +104,8 @@ namespace TwitterArt
         public MainPage()
         {
             InitializeComponent();
+
+            textBlockAbout.Text = "About: \nThe Happiness Forecast finds tweets about the search term you provide, and then sorts them based on their mood. \n\nUsing these tweets, we can forecast future moods.";
 
             //Loading image
             setLoadingImage();
@@ -103,7 +136,9 @@ namespace TwitterArt
             setLoadingImage();
 
             //clear chart
-            historyGrid.Children.Clear(); 
+            
+            //empty samples
+            sampleTweets.Clear();
             
             //start forecast
             startForecast();
@@ -122,13 +157,13 @@ namespace TwitterArt
 
             geocode = "";
 
-            if (useGPS)
+            if ((bool)checkBoxGPS.IsChecked)
             {
                 geocode = "&geocode=" + latitude + "," + longitude + ",25mi";
             }
-            string twitterGET = "http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A2012-" + month.ToString().PadLeft(2, '0') + "-" + (today - searchDay - 1) + "%20until%3A2012-" + month.ToString().PadLeft(2, '0') + "-" + (today - searchDay) + "&rpp=100" + geocode + "&result_type=recent";
+            string twitterGET = "http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A2012-" + month.ToString().PadLeft(2, '0') + "-" + (today - searchDay - 1) + "%20until%3A2012-" + month.ToString().PadLeft(2, '0') + "-" + (today - searchDay) + "&rpp=100&lang=en&page="+GETpage + geocode + "&result_type=recent";
 
-             client.DownloadStringAsync(new Uri("http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A2012-" + month.ToString().PadLeft(2, '0') + "-" + (today - searchDay - 1) + "%20until%3A2012-0" + month.ToString().PadLeft(2, '0') + "-" + (today - searchDay) + "&rpp=100"+geocode+"&result_type=recent"));
+            client.DownloadStringAsync(new Uri(twitterGET));//"http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A2012-" + month.ToString().PadLeft(2, '0') + "-" + (today - searchDay - 1) + "%20until%3A2012-0" + month.ToString().PadLeft(2, '0') + "-" + (today - searchDay) + "&rpp=100&page=" + geocode + "&result_type=recent"));
             
       
         }
@@ -154,8 +189,8 @@ namespace TwitterArt
                     TwitterItem tempTweet = new TwitterItem();
                     tempTweet.ImageSource = (tweet["profile_image_url"]).ToString();
                     tempTweet.Message = tweet["text"].ToString();
-                    tempTweet.Username = (tweet["from_user"]).ToString();
-                    tempTweet.Created_at = (tweet["created_at"]).ToString();
+                    tempTweet.Username = tweet["from_user"].ToString();
+                    tempTweet.hourCreated = Int32.Parse(tweet["created_at"].ToString().Substring((tweet["created_at"].ToString().IndexOf(':')-2),2));
 
                     //Set mood and mood score
                     //decide if this tweet is angry, sad, or happy
@@ -165,17 +200,17 @@ namespace TwitterArt
 
                     if (tmpHappy == tmpAngry && tmpHappy == tmpSad)
                     {
-                        tweetTypeCount[(int)TweetType.Nuetral, numDays - searchDay]++;
+                        tweetTypeCount[(int)TweetType.Nuetral, (numDays - searchDay)*1+(tempTweet.hourCreated<12?0:0)]++;
                         tempTweet.Mood = TweetType.Nuetral;
                         tempTweet.MoodScore = tmpHappy; //all tmps equal so just choose arbitrary one
                         if (tmpHappy == 0)
                         {
-                            sampleTweets.Add( tempTweet); //nuetral ones are added to the end of samples
+                            sampleTweets.Add(tempTweet); //nuetral ones are added to the end of samples
                         }
                     }
                     else if (tmpHappy >= tmpAngry && tmpHappy >= tmpSad) //ordering of ifs skews to favour happy: ie. happy:2 angry:2 sad:1 would be happy
                     {
-                        tweetTypeCount[(int)TweetType.Happy, numDays - searchDay]++;
+                        tweetTypeCount[(int)TweetType.Happy,(numDays - searchDay)*1+(tempTweet.hourCreated<12?0:0)]++; //set back to *2 and 0:1
                         tempTweet.Mood = TweetType.Happy;
                         tempTweet.MoodScore = tmpHappy;
                         if (bestTweet[(int)TweetType.Happy] < tmpHappy)
@@ -186,7 +221,7 @@ namespace TwitterArt
                     }
                     else if (tmpAngry >= tmpHappy && tmpAngry >= tmpSad)
                     {
-                        tweetTypeCount[(int)TweetType.Angry, numDays - searchDay]++;
+                        tweetTypeCount[(int)TweetType.Angry,(numDays - searchDay)*1+(tempTweet.hourCreated<12?0:0)]++;
                         tempTweet.Mood = TweetType.Angry;
                         tempTweet.MoodScore = tmpAngry;
                         if (bestTweet[(int)TweetType.Angry] < tmpAngry)
@@ -197,13 +232,23 @@ namespace TwitterArt
                     }
                     else if (tmpSad >= tmpHappy && tmpSad >= tmpAngry)
                     {
-                        tweetTypeCount[(int)TweetType.Sad, numDays - searchDay]++;
+                        tweetTypeCount[(int)TweetType.Sad,(numDays - searchDay)*1+(tempTweet.hourCreated<12?0:0)]++;
                         tempTweet.Mood = TweetType.Sad;
                         tempTweet.MoodScore = tmpSad;
                         if (bestTweet[(int)TweetType.Sad] < tmpSad)
                         {
                             sampleTweets.Insert(0,tempTweet);
                             bestTweet[(int)TweetType.Sad] = tmpSad;
+                        }
+                    }
+                    else//if (tmpHappy == tmpAngry && tmpHappy == tmpSad)
+                    {
+                        tweetTypeCount[(int)TweetType.Nuetral,(numDays - searchDay)*1+(tempTweet.hourCreated<12?0:0)]++;
+                        tempTweet.Mood = TweetType.Nuetral;
+                        tempTweet.MoodScore = tmpHappy; //all tmps equal so just choose arbitrary one
+                        if (tmpHappy == 0)
+                        {
+                            sampleTweets.Add(tempTweet); //nuetral ones are added to the end of samples
                         }
                     }
 
@@ -248,10 +293,20 @@ namespace TwitterArt
         {
             WebClient clientTmp = new WebClient();
             clientTmp.DownloadStringCompleted += new DownloadStringCompletedEventHandler(client_DownloadStringCompleted);
-            
-            //reset search days and counts            
-            searchDay--;
-            clientTmp.DownloadStringAsync(new Uri("http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A2012-" + month.ToString().PadLeft(2, '0') + "-" + (today - searchDay - 1) + "%20until%3A2012-" + month.ToString().PadLeft(2, '0') + "-" + (today - searchDay) + "&rpp=100" + geocode + "&result_type=recent"));
+
+            //Do next page
+            if (GETpage < numPages)
+            {
+                GETpage += pagesPerIteration ;
+            }
+            else // do first page next day.
+            {
+                //reset search days and counts            
+                searchDay--;
+                GETpage = 1;
+            }
+
+            clientTmp.DownloadStringAsync(new Uri("http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A2012-" + month.ToString().PadLeft(2, '0') + "-" + (today - searchDay - 1) + "%20until%3A2012-" + month.ToString().PadLeft(2, '0') + "-" + (today - searchDay) + "&rpp=100&lang=en&page="+GETpage + geocode + "&result_type=recent"));
             
         }
         private void setLoadingImage()
@@ -298,17 +353,19 @@ namespace TwitterArt
         private void drawChart()
         {
             historyGrid.Children.Clear();
-            lineHeightMultiplier = 9+(int)(historyGrid.ActualHeight / 60);
+            lineHeightMultiplier = (int)(historyGrid.ActualHeight / Math.Max(tweetTypeCount[3,2],Math.Max(tweetTypeCount[0,0],tweetTypeCount[0,1])));
 
-            for (int i = 0; i < (numDays-1); i++)
+            int numPlots = numDays - 1; //todo: *2 if <12h gradiant -1 because last point is taken care of automagically
+
+            for (int i = 0; i < numPlots; i++)  
             {
                 for (int j = 0; j < numEmotions; j++)
                 {
                     Line line = new Line();
                     Line accentLine = new Line();
 
-                    line.X1 = i * (historyGrid.ActualWidth / (numDays-1) - 8) + 20;
-                    line.X2 = (i + 1) * (historyGrid.ActualWidth / (numDays-1) - 8) + 20;
+                    line.X1 = i * (historyGrid.ActualWidth / numPlots - 8) + 20;
+                    line.X2 = (i + 1) * (historyGrid.ActualWidth / numPlots - 8) + 20;
 
                     /*if (j==(int)TweetType.Nuetral)
                     {
@@ -367,8 +424,11 @@ namespace TwitterArt
             textBlockSample.Text += "\n\nNuetral: " + sampleTweets[(int)TweetType.Nuetral].Message;
             */
 
-            listBox1.ItemsSource = sampleTweets;
-          
+            //To ensure proper updating. Hack
+            TwitterItem[] tmpTweets = new TwitterItem[sampleTweets.Count()];
+            sampleTweets.CopyTo(tmpTweets);
+
+            listBox1.ItemsSource = tmpTweets;          
             
         }
 
@@ -477,7 +537,42 @@ namespace TwitterArt
             startForecast();    
         }
 
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
+            var settings = IsolatedStorageSettings.ApplicationSettings;
+
+            if (settings.TryGetValue("useGPS", out useGPS))
+            {
+                checkBoxGPS.IsChecked = useGPS;
+            }
+
+            if (settings.TryGetValue("searchText", out searchString))
+            {
+                textBox1.Text = searchString;
+            }
+        }
 
 
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            base.OnNavigatedFrom(e);
+
+
+var settings = IsolatedStorageSettings.ApplicationSettings;
+
+if (settings.Contains("searchText"))
+    settings["searchText"] = textBox1.Text;
+else
+    settings.Add("searchText", textBox1.Text);
+
+if (settings.Contains("useGPS"))
+    settings["useGPS"] = checkBoxGPS.IsChecked.Value;
+else
+    settings.Add("useGPS", checkBoxGPS.IsChecked.Value);
+
+settings.Save();
+            
+        }
     }
 }

@@ -58,12 +58,16 @@
             
             <!--Pivot item 4-->
             <controls:PivotItem Header="Settings">
-                <Grid>
-                    <Button Content="Run Forecast" Height="72" Name="button1" VerticalAlignment="Top"  Click="button1_Click" Margin="0,6,0,0" HorizontalAlignment="Stretch" />
-                    <TextBox Height="72" HorizontalAlignment="Stretch" Margin="146,116,0,0" Name="textBox1" Text="I%20Feel" VerticalAlignment="Top"  TextChanged="textBox1_TextChanged" Width="307" />
-                    <TextBlock Height="72" HorizontalAlignment="Left" Margin="6,116,0,0" Name="textBlock1" Text="Search Text:" VerticalAlignment="Top" Width="136" FontSize="26" Padding="0,18,0,0" />
-                    <TextBlock Height="63" HorizontalAlignment="Stretch" Margin="6,223,27,0" Name="textBlockGPS" Text="GPS: Initializing..." VerticalAlignment="Top" FontSize="26" />
-                </Grid>
+                <ScrollViewer HorizontalAlignment="Stretch" Margin="0,0,0,0" Name="stackPanel3" VerticalAlignment="Top">
+                    <Grid>
+                        <Button Content="Run Forecast" Height="72" Name="button1" VerticalAlignment="Top"  Click="button1_Click" Margin="0,6,0,0" HorizontalAlignment="Stretch" />
+                        <TextBox Height="72" HorizontalAlignment="Stretch" Margin="146,116,0,0" Name="textBox1" Text="I%20Feel" VerticalAlignment="Top"  TextChanged="textBox1_TextChanged" Width="307" />
+                        <TextBlock Height="72" HorizontalAlignment="Left" Margin="6,116,0,0" Name="textBlock1" Text="Search Text:" VerticalAlignment="Top" Width="136" FontSize="24" Padding="0,18,0,0" />
+                        <TextBlock Height="63" HorizontalAlignment="Stretch" Margin="6,239,27,0" Name="textBlockGPS" Text="GPS: Initializing..." VerticalAlignment="Top" FontSize="24" />
+                        <CheckBox Content="Use GPS" Height="72" HorizontalAlignment="Left" Margin="17,286,0,0" Name="checkBoxGPS" VerticalAlignment="Top" />
+                        <TextBlock Height="233" HorizontalAlignment="Left" Margin="3,370,0,0" Name="textBlockAbout" Text="About: " VerticalAlignment="Top" Width="451" FontSize="24" />
+                    </Grid>
+                </ScrollViewer>
             </controls:PivotItem>
         
         </controls:Pivot>

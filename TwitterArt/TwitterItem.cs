@@ -16,7 +16,7 @@ namespace TwitterArt
         public string Username { get; set; }
         public string Message { get; set; }
         public string ImageSource { get; set; }
-        public string Created_at { get; set; }
+        public int hourCreated { get; set; }
         public string ImageMood { get; set; }
         public MainPage.TweetType Mood { get; set; }
         public int MoodScore { get; set; }
