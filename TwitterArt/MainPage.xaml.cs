@@ -31,9 +31,7 @@ using System.Windows.Navigation;
 //SEARCH API https://dev.twitter.com/docs/using-search
 
 /*
- * 
- * 
- * 
+ *
  * 
  * 
  * SETUP TO GRAB NEXT PAGE BASED ON IDs to prevent duplicates
