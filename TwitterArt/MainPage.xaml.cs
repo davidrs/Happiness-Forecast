@@ -12,6 +12,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using System.Net.NetworkInformation;
 using Microsoft.Phone.Controls;
 
 using System.Xml;
@@ -86,6 +87,7 @@ namespace TwitterArt
 //        string sinceId;        
         GeoCoordinateWatcher watcher;
         bool useGPS=false;
+        bool networkAvailable = false;
         string geocode = "";
 
         //TextBlock tmpTxtBlock;
@@ -103,7 +105,7 @@ namespace TwitterArt
                 textBlockHistoryLabels[i] = new TextBlock
                 {
                     Text = "Home",
-                    Margin = new Thickness(90, 20, 0, 0),
+                    Margin = new Thickness(90, 25, 0, 0),
                     Height = 61,
                     HorizontalAlignment = HorizontalAlignment.Left,
                     VerticalAlignment = VerticalAlignment.Bottom,
@@ -112,20 +114,22 @@ namespace TwitterArt
                 };
 
             }
-            //Loading image
-            setLoadingImage();
-            
-            //initialize variables 
-            watcher = new GeoCoordinateWatcher(GeoPositionAccuracy.Default);
-            watcher.MovementThreshold = 500;
-
-            // Add event handlers for StatusChanged and PositionChanged events
-            watcher.StatusChanged += new EventHandler<GeoPositionStatusChangedEventArgs>(watcher_StatusChanged);
-            watcher.PositionChanged += new EventHandler<GeoPositionChangedEventArgs<GeoCoordinate>>(watcher_PositionChanged);
 
 
-            //Do first forecast
-            startForecast();     
+                //initialize variables 
+                watcher = new GeoCoordinateWatcher(GeoPositionAccuracy.Default);
+                watcher.MovementThreshold = 500;
+
+                // Add event handlers for StatusChanged and PositionChanged events
+                watcher.StatusChanged += new EventHandler<GeoPositionStatusChangedEventArgs>(watcher_StatusChanged);
+                watcher.PositionChanged += new EventHandler<GeoPositionChangedEventArgs<GeoCoordinate>>(watcher_PositionChanged);
+
+                //Loading image
+                if (setLoadingImage()) //false means no network connection available
+                {
+                    //Do first forecast
+                    startForecast();
+                }
        
             //add listener to grid
             grid1.SizeChanged += new SizeChangedEventHandler(gridSizeChanged);
@@ -135,7 +139,10 @@ namespace TwitterArt
         private void button1_Click(object sender, RoutedEventArgs e)
         {
             //set loading image
-            setLoadingImage();
+            if (!setLoadingImage()) //false means no network connection available
+            {
+                return;
+            }
 
             masterPivot.SelectedItem = forecastPivot;
 
@@ -151,6 +158,7 @@ namespace TwitterArt
 
         private void startForecast()
         {
+           
             WebClient client = new WebClient();
             client.DownloadStringCompleted += new DownloadStringCompletedEventHandler(client_DownloadStringCompleted);
             //reset search days and counts
@@ -363,15 +371,23 @@ namespace TwitterArt
             clientTmp.DownloadStringAsync(new Uri("http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A"+dateToday.Year+"-" + tmpDate.Subtract(TimeSpan.FromDays(1)).Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Subtract(TimeSpan.FromDays(1)).Day) + "%20until%3A"+dateToday.Year+"-" + tmpDate.Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Day)+"&rpp=100&lang=en&page=" + GETpage + maxID + geocode + "&result_type=recent"));
             
         }
-        private void setLoadingImage()
+        private bool setLoadingImage()
         {
+            networkAvailable = NetworkInterface.GetIsNetworkAvailable();
+
             //set image
-            string imageForecastString = "Images/loadingFace.png";
+            string imageForecastString = "Images/error.png";
+            if (networkAvailable)
+            {
+                imageForecastString = "Images/loadingFace.png";
+            }
+
             Uri uri = new Uri(imageForecastString, UriKind.Relative);
             StreamResourceInfo resourceInfo = Application.GetResourceStream(uri);
             BitmapImage bmp = new BitmapImage();
             bmp.SetSource(resourceInfo.Stream);
-            imageForecast.Source = bmp;  
+            imageForecast.Source = bmp;
+            return networkAvailable;
         }
         //forecast, just do delta from yesterday to today
         private void doForecast()
@@ -440,8 +456,8 @@ namespace TwitterArt
                     line.X1 = i * (historyGrid.ActualWidth / numPlots - 8) + 20;
                     line.X2 = (i + 1) * (historyGrid.ActualWidth / numPlots - 8) + 20;
                                                  
-                    line.Y1 = historyGrid.ActualHeight - tweetTypePercentage[j,i] * lineHeightMultiplier;
-                    line.Y2 = historyGrid.ActualHeight - tweetTypePercentage[j, i+1] * lineHeightMultiplier;
+                    line.Y1 = historyGrid.ActualHeight - tweetTypePercentage[j,i] * lineHeightMultiplier-20;
+                    line.Y2 = historyGrid.ActualHeight - tweetTypePercentage[j, i+1] * lineHeightMultiplier-20;
 
                     line.StrokeThickness = 5.0;
 
@@ -482,7 +498,7 @@ namespace TwitterArt
             for (int i = 0; i < (numPlots + 1); i++)
             {
                 //Draw label on xaxis                
-                textBlockHistoryLabels[i].Margin = new Thickness((historyGrid.ActualWidth / numPlots - 18) * i + 20, 0, 0, 0);
+                textBlockHistoryLabels[i].Margin = new Thickness((historyGrid.ActualWidth / numPlots - 18) * i + 20, 5, 0, 0);
                 historyGrid.Children.Add(textBlockHistoryLabels[i]);
             }
 
@@ -595,8 +611,11 @@ namespace TwitterArt
            //TODO: commented out until settings has gps options 
             // useGPS = true;
 
-            //Do first forecast
-            startForecast();    
+            if (networkAvailable)
+            {
+                //Do first forecast
+                startForecast();
+            }
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)

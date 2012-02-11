@@ -35,29 +35,38 @@
             </controls:PivotItem>
             
             <!--Pivot item 3-->
-            <controls:PivotItem Header="Sample">
-                <ListBox  HorizontalAlignment="Stretch" Margin="2,8,1,0" Name="listBox1" VerticalAlignment="Stretch" >             
+            <controls:PivotItem Header="Samples">
+                <ListBox Name="listBox1" >             
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-<!--                            <Border Margin="0" Padding="0,9,0,9"  BorderBrush="#8F5B9CD1" BorderThickness="0,0,0,1" VerticalAlignment="Top">-->
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="0,5">
-                                    <Image Source="{Binding ImageSource}" Height="75" Width="75" VerticalAlignment="Top" Margin="0,12,8,0"/>
-                                    <Image Source="{Binding ImageMood}" Height="47" Width="45" VerticalAlignment="Top" Margin="-28,50,8,0"/>
-                                    <StackPanel  Width="360">
-                                        <!--<TextBlock Text="{Binding Username}"  VerticalAlignment="Stretch" FontSize="24" />-->
-                                        <TextBlock Text="{Binding Message}" HorizontalAlignment="Stretch" TextWrapping="Wrap" FontSize="22" />
-                                    </StackPanel>
-                                </StackPanel>
-                            <!--</Border>-->
+                                <StackPanel Margin="0,20" Orientation="Vertical">
+                                <Grid>
+                                    <Image Source="{Binding ImageSource}" Height="85" Width="85"   VerticalAlignment="Center" HorizontalAlignment="Left"   Margin="0,0,0,0"/>
+                                    <Image Source="{Binding ImageMood}"  VerticalAlignment="Center" HorizontalAlignment="Left" Height="52" Width="50"   Margin="48,59,0,0"/>
+                                    <TextBlock Text="{Binding Message}" Margin="95,0,0,0" TextWrapping="Wrap"   VerticalAlignment="Top" HorizontalAlignment="Left" FontSize="22" />
+                                </Grid>
+                            </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-               
-                <!--  <ScrollViewer HorizontalAlignment="Left" Margin="0,0,0,0" Name="stackPanel2" VerticalAlignment="Top">                    
-                    <TextBlock x:Name="textBlockSample" TextWrapping="Wrap" FontSize="26"  />                   
-                </ScrollViewer> -->
             </controls:PivotItem>
-            
+            <!--<controls:PivotItem Header="Sample">
+                <ListBox  HorizontalAlignment="Stretch" Margin="2,8,1,0" Name="listBox1" VerticalAlignment="Stretch" >
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>                            
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="0,5">
+                                <Image Source="{Binding ImageSource}" Height="75" Width="75" VerticalAlignment="Top" Margin="0,12,8,0"/>
+                                <Image Source="{Binding ImageMood}" Height="47" Width="45" VerticalAlignment="Top" Margin="-28,50,8,0"/>
+                                <StackPanel  Width="360">                                    
+                                    <TextBlock Text="{Binding Message}" HorizontalAlignment="Stretch" TextWrapping="Wrap" FontSize="22" />
+                                </StackPanel>
+                            </StackPanel>
+
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </controls:PivotItem>-->
+
             <!--Pivot item 4-->
             <controls:PivotItem Header="Settings">
                 <ScrollViewer HorizontalAlignment="Stretch" Margin="0,0,0,0" Name="stackPanel3" VerticalAlignment="Top">
