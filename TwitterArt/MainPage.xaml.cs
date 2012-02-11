@@ -30,11 +30,16 @@ using System.Windows.Navigation;
 
 /*
  *
- * ToDo: change text on history page to show dates for each point.
- * ToDo: use date object for years.
- * v1.2save current setup as long term forecast.
- * v1.2+add short term, today only, sort by hours.
- * v1.2+add settings option for short term or long term
+ * v1 fix layout of samples
+ * v1 add timestamp to samples, and maybe username
+ * 
+ * 
+ * v1.2 save current setup as long term forecast.
+ * v1.2 +add short term, today only, sort by hours.
+ * v1.2 +add settings option for short term or long term
+ * v1.2 Parental control
+ * v1.2 group samples by day
+ * v1.2 look at facebook design, try something similarly pretty: nice top banner
  */
 
 namespace TwitterArt
@@ -42,7 +47,7 @@ namespace TwitterArt
     public partial class MainPage : PhoneApplicationPage
     {
         const int numEmotions = 4; //happy,angry,sad,nuetral
-        string[] happyWords = new string[] { "happy", ":)", ":D", ":-)","=)", "great","jolly","cute","cheerful","lol","snug","yay","pleasure","exhilarated", "wonderful", "good", "excellent", "fantastic","smile","awesome","love" };
+        string[] happyWords = new string[] { "happy", ":)", ":D", ":-)","=)", "great","jolly","cute","cheerful","snug","yay","pleasure","exhilarated", "wonderful", "good", "excellent", "fantastic","smile","awesome","love" }; //,"lol"
         string[] angryWords = new string[] { "angry", "mad", "hate","disgust","rage","destory","kill","fight","shoot","raging","anger","cranky","bitter","mean","annoyed", "frown", "pissed", "stupid", "annoying", "wretched", "shit", "fuck", "asshole", "dick","pussy","cunt" };
         string[] sadWords = new string[] { "sad", "depressed", ":(", ":'(", ":-(","=(", "lonely", "death","tear","unhappy", "miserable","blue", "despondent", "desolate", "forlorn", "sorrow", "melancholy", "woeful","morbid", "abject", "deject",
                                             "suffer","sufer", "torment", "agony", "pain","fear", "distres", "grief", "angst", "affliction", "anxiety","miserable", "depres","darkness","scared","crying", "gloom","alone", "morose",  "dismal", "moping", "glum", "unhappy" };
@@ -53,6 +58,7 @@ namespace TwitterArt
         int[] bestTweet = new int[numEmotions]{0,0,0,0};
 
         //v2
+        TextBlock[] textBlockHistoryLabels = new TextBlock[numDays];
         JObject root ;
 
         //Todo: switch to 5 pages from just 1 day.
@@ -82,16 +88,30 @@ namespace TwitterArt
         bool useGPS=false;
         string geocode = "";
 
-        TextBlock tmpTxtBlock;
+        //TextBlock tmpTxtBlock;
 
         // Constructor
         public MainPage()
         {
             InitializeComponent();
 
-            textBlockAbout.Text = "About: \nThe Happiness Forecast finds tweets about the search term you provide, and then sorts them based on their mood. \n\nUsing these tweets, we can forecast future moods.";
-            tmpTxtBlock = textBlockHistory;
 
+            textBlockAbout.Text = "About: \nThe Happiness Forecast uses some nifty artificial intelligence to sort Tweets based on mood, and then gives you a forecast for the day.\n\nPlease rate and comment on the marketplace, or email suggestions to wp7@smewebsites.com \n\nComing Soon: \n+ 24 hour window\n+ Ability to group samples by day or mood";
+            //tmpTxtBlock = textBlockHistory;
+            for (int i = 0; i < numDays; i++)
+            {
+                textBlockHistoryLabels[i] = new TextBlock
+                {
+                    Text = "Home",
+                    Margin = new Thickness(90, 20, 0, 0),
+                    Height = 61,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    VerticalAlignment = VerticalAlignment.Bottom,
+                    TextAlignment = TextAlignment.Center,
+                    FontSize = 20
+                };
+
+            }
             //Loading image
             setLoadingImage();
             
@@ -134,7 +154,7 @@ namespace TwitterArt
             WebClient client = new WebClient();
             client.DownloadStringCompleted += new DownloadStringCompletedEventHandler(client_DownloadStringCompleted);
             //reset search days and counts
-            searchDay = numDays;
+            searchDay = numDays-1; //if we're on the 11th and want the 8th, thats 4 days ago, but -3
             tweetTypeCount = new int[4, 4] { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
             tweetTypePercentage = new int[4, 4] { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
             tweetTotalCount=new int[4] { 0, 0, 0, 0 };
@@ -149,7 +169,7 @@ namespace TwitterArt
             }
             DateTime tmpDate = new DateTime();
             tmpDate = dateToday.Subtract(TimeSpan.FromDays(searchDay));
-            string twitterGET = "http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A2012-" + tmpDate.Subtract(TimeSpan.FromDays(1)).Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Subtract(TimeSpan.FromDays(1)).Day) + "%20until%3A2012-" + tmpDate.Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Day) + "&rpp=100&lang=en&page=" + GETpage + geocode + "&result_type=recent";
+            string twitterGET = "http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A"+dateToday.Year+"-" + tmpDate.Subtract(TimeSpan.FromDays(1)).Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Subtract(TimeSpan.FromDays(1)).Day) + "%20until%3A"+dateToday.Year+"-" + tmpDate.Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Day) + "&rpp=100&lang=en&page=" + GETpage + geocode + "&result_type=recent";
 
             client.DownloadStringAsync(new Uri(twitterGET));
             
@@ -174,12 +194,12 @@ namespace TwitterArt
 
                 foreach (JObject tweet in tweetsJArray)
                 {
-                    tweetTotalCount[numDays - searchDay]++;
+                    tweetTotalCount[numDays - searchDay-1]++;
 
                     TwitterItem tempTweet = new TwitterItem();
                     tempTweet.ImageSource = (tweet["profile_image_url"]).ToString();
                     tempTweet.Message = tweet["text"].ToString();
-                    tempTweet.Username = tweet["from_user"].ToString();
+                    tempTweet.Username = tweet["from_user"].ToString()+":";
                     tempTweet.hourCreated = Int32.Parse(tweet["created_at"].ToString().Substring((tweet["created_at"].ToString().IndexOf(':')-2),2));
 
                     //Set mood and mood score
@@ -190,21 +210,21 @@ namespace TwitterArt
 
                     if (tmpHappy == tmpAngry && tmpHappy == tmpSad)
                     {
-                        tweetTypeCount[(int)TweetType.Nuetral, (numDays - searchDay)*1+(tempTweet.hourCreated<12?0:0)]++;
+                        tweetTypeCount[(int)TweetType.Nuetral, (numDays - searchDay-1)*1+(tempTweet.hourCreated<12?0:0)]++;
                         tempTweet.Mood = TweetType.Nuetral;
                         tempTweet.MoodScore = tmpHappy; //all tmps equal so just choose arbitrary one
                         if (tmpHappy == 0 && (sampleTweets.Count%20==0)) //mod 12 just to prevent too many samples
                         {
                             sampleTweets.Insert(0, tempTweet); //nuetral ones are added to the end of samples
                         }
-                        else if (tmpHappy == 0 && (sampleTweets.Count % 13 == 0)) //mod 12 just to prevent too many samples
+                        else if (tmpHappy == 0 && (sampleTweets.Count % 11 == 0)) //mod 12 just to prevent too many samples
                         {
                             sampleTweets.Add(tempTweet); //nuetral ones are added to the end of samples
                         }
                     }
                     else if (tmpHappy >= tmpAngry && tmpHappy >= tmpSad) //ordering of ifs skews to favour happy: ie. happy:2 angry:2 sad:1 would be happy
                     {
-                        tweetTypeCount[(int)TweetType.Happy,(numDays - searchDay)*1+(tempTweet.hourCreated<12?0:0)]++; //set back to *2 and 0:1
+                        tweetTypeCount[(int)TweetType.Happy,(numDays - searchDay-1)*1+(tempTweet.hourCreated<12?0:0)]++; //set back to *2 and 0:1
                         tempTweet.Mood = TweetType.Happy;
                         tempTweet.MoodScore = tmpHappy;
                         if (bestTweet[(int)TweetType.Happy] < tmpHappy)
@@ -212,7 +232,7 @@ namespace TwitterArt
                             sampleTweets.Insert(0, tempTweet); 
                             bestTweet[(int)TweetType.Happy] = tmpHappy;
                         }
-                        else if (bestTweet[(int)TweetType.Happy] <= tmpHappy && tweetTotalCount[numDays - searchDay] % 2 == 0)
+                        else if (bestTweet[(int)TweetType.Happy] <= tmpHappy && tweetTotalCount[numDays - searchDay-1] % 2 == 0)
                         {
                             sampleTweets.Add( tempTweet); ;
                             bestTweet[(int)TweetType.Happy] = tmpHappy;
@@ -220,7 +240,7 @@ namespace TwitterArt
                     }
                     else if (tmpAngry >= tmpHappy && tmpAngry >= tmpSad)
                     {
-                        tweetTypeCount[(int)TweetType.Angry,(numDays - searchDay)*1+(tempTweet.hourCreated<12?0:0)]++;
+                        tweetTypeCount[(int)TweetType.Angry,(numDays - searchDay-1)*1+(tempTweet.hourCreated<12?0:0)]++;
                         tempTweet.Mood = TweetType.Angry;
                         tempTweet.MoodScore = tmpAngry;
                         if (bestTweet[(int)TweetType.Angry] < tmpAngry)
@@ -228,7 +248,7 @@ namespace TwitterArt
                             sampleTweets.Insert(0, tempTweet);
                             bestTweet[(int)TweetType.Angry] = tmpAngry;
                         }
-                        else if ( (bestTweet[(int)TweetType.Angry] <= tmpAngry && tweetTotalCount[numDays - searchDay] % 2 == 0))
+                        else if ( (bestTweet[(int)TweetType.Angry] <= tmpAngry && tweetTotalCount[numDays - searchDay-1] % 2 == 0))
                         {
                             sampleTweets.Add(tempTweet);
                             bestTweet[(int)TweetType.Angry] = tmpAngry;
@@ -236,7 +256,7 @@ namespace TwitterArt
                     }
                     else if (tmpSad >= tmpHappy && tmpSad >= tmpAngry)
                     {
-                        tweetTypeCount[(int)TweetType.Sad,(numDays - searchDay)*1+(tempTweet.hourCreated<12?0:0)]++;
+                        tweetTypeCount[(int)TweetType.Sad,(numDays - searchDay-1)*1+(tempTweet.hourCreated<12?0:0)]++;
                         tempTweet.Mood = TweetType.Sad;
                         tempTweet.MoodScore = tmpSad;
                         if (bestTweet[(int)TweetType.Sad] < tmpSad)
@@ -244,7 +264,7 @@ namespace TwitterArt
                             sampleTweets.Insert(0,tempTweet);
                             bestTweet[(int)TweetType.Sad] = tmpSad;
                         }
-                        else if (bestTweet[(int)TweetType.Sad] <= tmpSad &&  tweetTotalCount[numDays - searchDay] % 2 ==0){
+                        else if (bestTweet[(int)TweetType.Sad] <= tmpSad &&  tweetTotalCount[numDays - searchDay-1] % 2 ==0){
                             sampleTweets.Add( tempTweet);
                             bestTweet[(int)TweetType.Sad] = tmpSad;
                         }
@@ -253,13 +273,16 @@ namespace TwitterArt
                      tempTweet.ImageMood= "Images/" + tempTweet.Mood.ToString().ToLower() + "Facesm.png";
                 }
 
-                if (searchDay > 1)
+                if (searchDay > 0)
                 {
                     //move on to the next day
                     nextDay();
                 }
                 else
                 {
+                    //Set last history x axis label                                        
+                    textBlockHistoryLabels[numDays - 1].Text = dateToday.Subtract(TimeSpan.FromDays(searchDay)).DayOfWeek.ToString().Substring(0, 3);
+
                     //Normalize values
                     for (int i = 0; i < numDays; i++)
                     {
@@ -315,6 +338,12 @@ namespace TwitterArt
             WebClient clientTmp = new WebClient();
             clientTmp.DownloadStringCompleted += new DownloadStringCompletedEventHandler(client_DownloadStringCompleted);
 
+            DateTime tmpDate = new DateTime();
+            tmpDate = dateToday.Subtract(TimeSpan.FromDays(searchDay));
+            //Add current day of week to xAxis labels
+            textBlockHistoryLabels[numDays - searchDay-1].Text = tmpDate.DayOfWeek.ToString().Substring(0, 3);
+
+
             string maxID = ""; //should be blank if first page.
             //Do next page
             if (GETpage < numPages)
@@ -329,10 +358,9 @@ namespace TwitterArt
                 GETpage = 1;
             }
 
-            DateTime tmpDate = new DateTime();
-            tmpDate = dateToday.Subtract(TimeSpan.FromDays(searchDay));        
 
-            clientTmp.DownloadStringAsync(new Uri("http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A2012-" + tmpDate.Subtract(TimeSpan.FromDays(1)).Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Subtract(TimeSpan.FromDays(1)).Day) + "%20until%3A2012-" + tmpDate.Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Day)+"&rpp=100&lang=en&page=" + GETpage + maxID + geocode + "&result_type=recent"));
+            tmpDate = dateToday.Subtract(TimeSpan.FromDays(searchDay)); 
+            clientTmp.DownloadStringAsync(new Uri("http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A"+dateToday.Year+"-" + tmpDate.Subtract(TimeSpan.FromDays(1)).Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Subtract(TimeSpan.FromDays(1)).Day) + "%20until%3A"+dateToday.Year+"-" + tmpDate.Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Day)+"&rpp=100&lang=en&page=" + GETpage + maxID + geocode + "&result_type=recent"));
             
         }
         private void setLoadingImage()
@@ -393,14 +421,17 @@ namespace TwitterArt
         {
 
             historyGrid.Children.Clear();
-            historyGrid.Children.Add(tmpTxtBlock);
+            //historyGrid.Children.Add(tmpTxtBlock);
             
             lineHeightMultiplier = (int)((historyGrid.ActualHeight-20 )/ findMaxValue(tweetTypePercentage));
 
             int numPlots = numDays - 1; //todo: *2 if <12h gradiant -1 because last point is taken care of automagically
 
             for (int i = 0; i < numPlots; i++)  
-            {
+            {                
+
+                // = i * (historyGrid.ActualWidth / numPlots - 8) + 20;
+
                 for (int j = 0; j < numEmotions; j++)
                 {
                     Line line = new Line();
@@ -445,6 +476,14 @@ namespace TwitterArt
                     historyGrid.Children.Add(line);
                     historyGrid.Children.Add(accentLine);
                 }
+            }
+
+            //Add labels
+            for (int i = 0; i < (numPlots + 1); i++)
+            {
+                //Draw label on xaxis                
+                textBlockHistoryLabels[i].Margin = new Thickness((historyGrid.ActualWidth / numPlots - 18) * i + 20, 0, 0, 0);
+                historyGrid.Children.Add(textBlockHistoryLabels[i]);
             }
 
         }

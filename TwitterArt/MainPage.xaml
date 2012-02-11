@@ -30,7 +30,7 @@
             <!--Pivot item 2-->
             <controls:PivotItem Header="History">
                 <Grid Name="historyGrid">
-                    <TextBlock Height="61" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,0" Name="textBlockHistory" Text="4 day history" TextAlignment="Center" FontSize="28" />
+                    
                 </Grid>  
             </controls:PivotItem>
             
@@ -39,14 +39,16 @@
                 <ListBox  HorizontalAlignment="Stretch" Margin="2,8,1,0" Name="listBox1" VerticalAlignment="Stretch" >             
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Height="148" HorizontalAlignment="Stretch">
-                                <Image Source="{Binding ImageSource}" Height="75" Width="75" VerticalAlignment="Top" Margin="0,12,8,0"/>
-                                <Image Source="{Binding ImageMood}" Height="47" Width="45" VerticalAlignment="Top" Margin="-28,50,8,0"/>
-                                <StackPanel Width="370">
-                                    <TextBlock Text="{Binding UserName}"  FontSize="28" />
-                                    <TextBlock Text="{Binding Message}" HorizontalAlignment="Stretch" TextWrapping="Wrap" FontSize="24" />
+<!--                            <Border Margin="0" Padding="0,9,0,9"  BorderBrush="#8F5B9CD1" BorderThickness="0,0,0,1" VerticalAlignment="Top">-->
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="0,5">
+                                    <Image Source="{Binding ImageSource}" Height="75" Width="75" VerticalAlignment="Top" Margin="0,12,8,0"/>
+                                    <Image Source="{Binding ImageMood}" Height="47" Width="45" VerticalAlignment="Top" Margin="-28,50,8,0"/>
+                                    <StackPanel  Width="360">
+                                        <!--<TextBlock Text="{Binding Username}"  VerticalAlignment="Stretch" FontSize="24" />-->
+                                        <TextBlock Text="{Binding Message}" HorizontalAlignment="Stretch" TextWrapping="Wrap" FontSize="22" />
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
+                            <!--</Border>-->
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
@@ -62,9 +64,10 @@
                     <Grid>
                         <Button Content="Run Forecast" Height="72" Name="button1" VerticalAlignment="Top"  Click="button1_Click" Margin="0,6,0,0" HorizontalAlignment="Stretch" />
                         <TextBox Height="72" HorizontalAlignment="Stretch" Margin="146,116,0,0" Name="textBox1" Text="I%20Feel" VerticalAlignment="Top"  TextChanged="textBox1_TextChanged" Width="307" />
-                        <TextBlock Height="72" HorizontalAlignment="Left" Margin="6,116,0,0" Name="textBlock1" Text="Search Text" VerticalAlignment="Top" Width="136" FontSize="24" Padding="0,18,0,0" />
-                        <CheckBox Content="Use GPS" Height="72" HorizontalAlignment="Left" Margin="4,211,0,0" Name="checkBoxGPS" VerticalAlignment="Top" HorizontalContentAlignment="Right" FlowDirection="RightToLeft" Width="199" Checked="checkBoxGPS_Checked" Unchecked="checkBoxGPS_Unchecked"/>
-                        <TextBlock Height="292" HorizontalAlignment="Left" Margin="3,311,0,0" Name="textBlockAbout" Text="About: " VerticalAlignment="Top" Width="451" FontSize="24" TextWrapping="Wrap" />
+                        <TextBlock Height="72" HorizontalAlignment="Left" Margin="10,116,0,0" Name="textBlock1" Text="Search Text" VerticalAlignment="Top" Width="136" FontSize="24" Padding="0,18,0,0" />
+                        <CheckBox Content="Use GPS" Height="72" HorizontalAlignment="Left" Margin="0,211,0,0" Name="checkBoxGPS" VerticalAlignment="Top" HorizontalContentAlignment="Right" FlowDirection="RightToLeft" Width="202" Checked="checkBoxGPS_Checked" Unchecked="checkBoxGPS_Unchecked"/>
+                        <TextBlock  HorizontalAlignment="Stretch" Margin="9,311,0,0" Name="textBlockAbout" Text="About: " VerticalAlignment= "Stretch"  FontSize="24" TextWrapping="Wrap" />
+                        <TextBlock Height="21" HorizontalAlignment="Left" Margin="199,244,0,0" Name="textBlock2" Text="* Tweets within a 25 mile radius." VerticalAlignment="Top" Width="252" FontSize="17" />
                     </Grid>
                 </ScrollViewer>
             </controls:PivotItem>
