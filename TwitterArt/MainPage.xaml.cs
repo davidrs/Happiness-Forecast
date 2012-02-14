@@ -14,6 +14,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using System.Net.NetworkInformation;
 using Microsoft.Phone.Controls;
+using Microsoft.Phone.Tasks;
 
 using System.Xml;
 using System.Xml.Linq;
@@ -25,6 +26,7 @@ using System.Device.Location;
 //For JSON deserlization to object
 using Newtonsoft.Json.Linq;
 using System.Windows.Navigation;
+
 
 //Search api https://dev.twitter.com/docs/api/1/get/search
 //SEARCH API https://dev.twitter.com/docs/using-search
@@ -98,7 +100,7 @@ namespace TwitterArt
             InitializeComponent();
 
 
-            textBlockAbout.Text = "About: \nThe Happiness Forecast uses some nifty artificial intelligence to sort Tweets based on mood, and then gives you a forecast for the day.\n\nPlease rate and comment on the marketplace, or email suggestions to wp7@smewebsites.com \n\nComing Soon: \n+ 24 hour window\n+ Ability to group samples by day or mood";
+            textBlockAbout.Text = "Privacy Policy:\nThis application uses your current location to filter Tweets to within 25 miles of your location. Your location is sent to Twitter, but with no associated identifying information. You may disable use of your location via the Location Services above. \n\nAbout: \nThe Happiness Forecast uses some nifty artificial intelligence to sort Tweets based on mood, and then gives you a forecast for the day.\n\nComing Soon: \n+ 24 hour window\n+ Ability to group samples by day or mood";
             //tmpTxtBlock = textBlockHistory;
             for (int i = 0; i < numDays; i++)
             {
@@ -702,6 +704,15 @@ namespace TwitterArt
         {
             useGPS = false;
             watcher.Stop();
+        }
+
+        private void textBlockEmail_Tap(object sender, GestureEventArgs e)
+        {
+            new EmailComposeTask{
+            Subject="Happiness Forecast Feedback",
+            Body="",
+            To="wp7@smewebsites.com"
+            }.Show();
         }
     }
 }
