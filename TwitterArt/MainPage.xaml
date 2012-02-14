@@ -72,11 +72,12 @@
                 <ScrollViewer HorizontalAlignment="Stretch" Margin="0,0,0,0" Name="stackPanel3" VerticalAlignment="Top">
                     <Grid>
                         <Button Content="Run Forecast" Height="72" Name="button1" VerticalAlignment="Top"  Click="button1_Click" Margin="0,6,0,0" HorizontalAlignment="Stretch" />
-                        <TextBox Height="72" HorizontalAlignment="Stretch" Margin="146,116,0,0" Name="textBox1" Text="I%20Feel" VerticalAlignment="Top"  TextChanged="textBox1_TextChanged" Width="307" />
-                        <TextBlock Height="72" HorizontalAlignment="Left" Margin="10,116,0,0" Name="textBlock1" Text="Search Text" VerticalAlignment="Top" Width="136" FontSize="24" Padding="0,18,0,0" />
-                        <CheckBox Content="Use GPS" Height="72" HorizontalAlignment="Left" Margin="0,211,0,0" Name="checkBoxGPS" VerticalAlignment="Top" HorizontalContentAlignment="Right" FlowDirection="RightToLeft" Width="202" Checked="checkBoxGPS_Checked" Unchecked="checkBoxGPS_Unchecked"/>
-                        <TextBlock  HorizontalAlignment="Stretch" Margin="9,311,0,0" Name="textBlockAbout" Text="About: " VerticalAlignment= "Stretch"  FontSize="24" TextWrapping="Wrap" />
-                        <TextBlock Height="21" HorizontalAlignment="Left" Margin="199,244,0,0" Name="textBlock2" Text="* Tweets within a 25 mile radius." VerticalAlignment="Top" Width="252" FontSize="17" />
+                        <TextBox Height="72" HorizontalAlignment="Stretch" Margin="146,85,0,0" Name="textBox1" Text="I%20Feel" VerticalAlignment="Top"  TextChanged="textBox1_TextChanged" Width="307" />
+                        <TextBlock Height="72" HorizontalAlignment="Left" Margin="10,84,0,0" Name="textBlock1" Text="Search Text" VerticalAlignment="Top" Width="136" FontSize="24" Padding="0,18,0,0" />
+                        <CheckBox Content="Use GPS" Height="72" HorizontalAlignment="Left" Margin="0,161,0,0" Name="checkBoxGPS" VerticalAlignment="Top" HorizontalContentAlignment="Right" FlowDirection="RightToLeft" Width="202" Checked="checkBoxGPS_Checked" Unchecked="checkBoxGPS_Unchecked"/>
+                        <CheckBox Content="Censor Language" Height="72" HorizontalAlignment="Left" Margin="0,231,0,0" Name="checkBoxCensor" VerticalAlignment="Top" HorizontalContentAlignment="Right" FlowDirection="RightToLeft" Width="242" IsChecked="True" />
+                        <TextBlock  HorizontalAlignment="Stretch" Margin="9,320,0,0" Name="textBlockAbout" Text="About: " VerticalAlignment= "Stretch"  FontSize="24" TextWrapping="Wrap" />
+                        <TextBlock Height="21" HorizontalAlignment="Left" Margin="199,212,0,0" Name="textBlock2" Text="* Tweets within a 25 mile radius." VerticalAlignment="Top" Width="252" FontSize="17" />
                     </Grid>
                 </ScrollViewer>
             </controls:PivotItem>

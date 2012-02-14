@@ -38,7 +38,6 @@ using System.Windows.Navigation;
  * v1.2 save current setup as long term forecast.
  * v1.2 +add short term, today only, sort by hours.
  * v1.2 +add settings option for short term or long term
- * v1.2 Parental control
  * v1.2 group samples by day
  * v1.2 look at facebook design, try something similarly pretty: nice top banner
  */
@@ -49,9 +48,10 @@ namespace TwitterArt
     {
         const int numEmotions = 4; //happy,angry,sad,nuetral
         string[] happyWords = new string[] { "happy", ":)", ":D", ":-)","=)", "great","jolly","cute","cheerful","snug","yay","pleasure","exhilarated", "wonderful", "good", "excellent", "fantastic","smile","awesome","love" }; //,"lol"
-        string[] angryWords = new string[] { "angry", "mad", "hate","disgust","rage","destory","kill","fight","shoot","raging","anger","cranky","bitter","mean","annoyed", "frown", "pissed", "stupid", "annoying", "wretched", "shit", "fuck", "asshole", "dick","pussy","cunt" };
+        string[] angryWords = new string[] { "angry", "mad", "hate","disgust","rage","destory","kill","fight","shoot","raging","anger","cranky","bitter","mean","annoyed", "frown", "pissed", "stupid", "annoying", "wretched", "shit", "fuck", "asshole", "dick","pussy","cunt","bitch" };        
         string[] sadWords = new string[] { "sad", "depressed", ":(", ":'(", ":-(","=(", "lonely", "death","tear","unhappy", "miserable","blue", "despondent", "desolate", "forlorn", "sorrow", "melancholy", "woeful","morbid", "abject", "deject",
                                             "suffer","sufer", "torment", "agony", "pain","fear", "distres", "grief", "angst", "affliction", "anxiety","miserable", "depres","darkness","scared","crying", "gloom","alone", "morose",  "dismal", "moping", "glum", "unhappy" };
+        string[] badWords = new string[] { "shit", "fuck", "asshole", "dick", "pussy", "cunt", "bitch" };
 
         //v1
         string latitude, longitude;
@@ -305,6 +305,17 @@ namespace TwitterArt
                             
                         }
                     }
+
+                    //Censor samples
+                    if ((bool)checkBoxCensor.IsChecked)
+                    {
+                        foreach (TwitterItem tempTweet in sampleTweets)
+                        {
+                            sanitizeSample(tempTweet);
+                        }
+
+                    }
+
                     //create percentage values
                     for (int i = 0; i < numDays; i++)
                     {
@@ -322,13 +333,28 @@ namespace TwitterArt
             }
         }
 
+        private void sanitizeSample( TwitterItem tmpTwt)
+        {
+            for (int i = 0; i < badWords.Length; i++)
+            {
+                int lastFind = tmpTwt.Message.ToLower().IndexOf(badWords[i]);
+                while (lastFind != -1)
+                {
+                    if (lastFind > -1)
+                    {
+                        tmpTwt.Message = tmpTwt.Message.Replace(badWords[i], badWords[i][0] + "***");
+                    }
+                    lastFind = tmpTwt.Message.ToLower().IndexOf(badWords[i], lastFind + 1);
+                }
+            }
+        }
         private int wordCount(string[] wrdArray, string tmpTwt)
         {
             int tmpNum = 0;
+           
             for (int i = 0; i < wrdArray.Length; i++)
             {
                 int lastFind=-1;
-
                 lastFind=tmpTwt.IndexOf(wrdArray[i], lastFind+1);
 
                 while(lastFind>-1)
@@ -622,15 +648,18 @@ namespace TwitterArt
         {
             base.OnNavigatedTo(e);
             var settings = IsolatedStorageSettings.ApplicationSettings;
-
+            bool tmpCensor = false;
+            if (settings.TryGetValue("searchText", out searchString))
+            {
+                textBox1.Text = searchString;
+            }
             if (settings.TryGetValue("useGPS", out useGPS))
             {
                 checkBoxGPS.IsChecked = useGPS;
             }
-
-            if (settings.TryGetValue("searchText", out searchString))
+            if (settings.TryGetValue("censorLanguage", out tmpCensor))
             {
-                textBox1.Text = searchString;
+                checkBoxCensor.IsChecked = tmpCensor;
             }
         }
 
@@ -651,6 +680,12 @@ namespace TwitterArt
             settings["useGPS"] = checkBoxGPS.IsChecked.Value;
         else
             settings.Add("useGPS", checkBoxGPS.IsChecked.Value);
+
+
+        if (settings.Contains("censorLanguage"))
+            settings["censorLanguage"] = checkBoxCensor.IsChecked.Value;
+        else
+            settings.Add("censorLanguage", checkBoxCensor.IsChecked.Value);
 
         settings.Save();
             
