@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using System.Net.NetworkInformation;
 using Microsoft.Phone.Controls;
 using Microsoft.Phone.Tasks;
+using System.Globalization;
 
 using System.Xml;
 using System.Xml.Linq;
@@ -62,7 +63,7 @@ namespace TwitterArt
 
         //v2
         TextBlock[] textBlockHistoryLabels = new TextBlock[numDays];
-        JObject root ;
+
 
         //Todo: switch to 5 pages from just 1 day.
         //assuming 4 days of results used 
@@ -73,6 +74,8 @@ namespace TwitterArt
         int[,] tweetTypePercentage = new int[4, numDays] { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
         int[] tweetTotalCount = new int[4] { 0, 0, 0, 0 };
 
+        bool[] threadDayComplete = new bool[4] { false, false, false, false };
+
         public enum TweetType { Happy, Angry, Sad, Nuetral };
         TweetType forecast = TweetType.Nuetral;
 
@@ -80,8 +83,8 @@ namespace TwitterArt
         //int today = DateTime.Now.Day;
        // int month = DateTime.Now.Month;
         int tmpHappy,  tmpAngry, tmpSad;
-        int searchDay = numDays;
-        int GETpage = 1;
+       // int searchDay = numDays;
+       // int GETpage = 1;
         const int pagesPerIteration = 1;
         const int numPages =2;
 
@@ -161,15 +164,16 @@ namespace TwitterArt
         private void startForecast()
         {
            
-            WebClient client = new WebClient();
-            client.DownloadStringCompleted += new DownloadStringCompletedEventHandler(client_DownloadStringCompleted);
+           // WebClient client = new WebClient();
+           // client.DownloadStringCompleted += new DownloadStringCompletedEventHandler(client_DownloadStringCompleted);
             //reset search days and counts
-            searchDay = numDays-1; //if we're on the 11th and want the 8th, thats 4 days ago, but -3
+           // searchDay = numDays-1; //if we're on the 11th and want the 8th, thats 4 days ago, but -3
             tweetTypeCount = new int[4, 4] { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
             tweetTypePercentage = new int[4, 4] { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
             tweetTotalCount=new int[4] { 0, 0, 0, 0 };
             
             bestTweet = new int[numEmotions] { 0, 0, 0, 0 };
+            threadDayComplete = new bool[4] { false, false, false, false };
 
             geocode = "";
 
@@ -177,12 +181,18 @@ namespace TwitterArt
             {
                 geocode = "&geocode=" + latitude + "," + longitude + ",25mi";
             }
-            DateTime tmpDate = new DateTime();
-            tmpDate = dateToday.Subtract(TimeSpan.FromDays(searchDay));
-            string twitterGET = "http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A"+dateToday.Year+"-" + tmpDate.Subtract(TimeSpan.FromDays(1)).Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Subtract(TimeSpan.FromDays(1)).Day) + "%20until%3A"+dateToday.Year+"-" + tmpDate.Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Day) + "&rpp=100&lang=en&page=" + GETpage + geocode + "&result_type=recent";
-
-            client.DownloadStringAsync(new Uri(twitterGET));
+            //DateTime tmpDate = new DateTime();
+            //tmpDate = dateToday.Subtract(TimeSpan.FromDays(searchDay));
+           // string twitterGET = "http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A"+dateToday.Year+"-" + tmpDate.Subtract(TimeSpan.FromDays(1)).Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Subtract(TimeSpan.FromDays(1)).Day) + "%20until%3A"+dateToday.Year+"-" + tmpDate.Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Day) + "&rpp=100&lang=en&page=1" + geocode + "&result_type=recent";
             
+            //client.DownloadStringAsync(new Uri(twitterGET));
+
+            //Start all threads for all days at once.
+            for (int i = numDays-1; i >= 0; i--)
+            {
+                nextDay( i);
+            }
+
       
         }
 
@@ -196,21 +206,40 @@ namespace TwitterArt
             {
                 string twitterResults = e.Result;
 
-                 root = JObject.Parse(e.Result);
-
-                JArray tweetsJArray = JArray.Parse(root["results"].ToString());//e.Result);
-
+                JObject root  = JObject.Parse(e.Result);                
+                JArray tweetsJArray = JArray.Parse(root["results"].ToString());
                 List<TwitterItem> tweets = new List<TwitterItem>();
+
+                string date = "";
+                //todo: this part is sort of hacky way of finding the date.
+                if (root["next_page"] != null)
+                {
+                   date = root["next_page"].ToString().Substring(root["next_page"].ToString().IndexOf("until%3") + 8, 10);
+                }
+                else if (root["refresh_url"]!=null)
+                {
+                    date = root["refresh_url"].ToString().Substring(root["refresh_url"].ToString().IndexOf("until%3") + 8, 10);                
+                }
+                else if(root["previous_page"]!=null)
+                {
+                    date = root["previous_page"].ToString().Substring(root["previous_page"].ToString().IndexOf("until%3") + 8, 10);
+                }
+                DateTime localSearchDate = dateToday;
+                if (date != "")
+                {
+                    localSearchDate = DateTime.ParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture);  //"Sat, 28 Jan 2012 05:27:42 +0000"//"ddd, dd MMM yyyy HH:mm:ss zzz"
+                }
+
 
                 foreach (JObject tweet in tweetsJArray)
                 {
-                    tweetTotalCount[numDays - searchDay-1]++;
+                    tweetTotalCount[(dateToday - localSearchDate).Days]++;
 
                     TwitterItem tempTweet = new TwitterItem();
                     tempTweet.ImageSource = (tweet["profile_image_url"]).ToString();
                     tempTweet.Message = tweet["text"].ToString();
                     tempTweet.Username = tweet["from_user"].ToString()+":";
-                    tempTweet.hourCreated = Int32.Parse(tweet["created_at"].ToString().Substring((tweet["created_at"].ToString().IndexOf(':')-2),2));
+                    tempTweet.hourCreated = Int32.Parse(tweet["created_at"].ToString().Substring((tweet["created_at"].ToString().IndexOf(':')-2),2));                   
 
                     //Set mood and mood score
                     //decide if this tweet is angry, sad, or happy
@@ -220,7 +249,7 @@ namespace TwitterArt
 
                     if (tmpHappy == tmpAngry && tmpHappy == tmpSad)
                     {
-                        tweetTypeCount[(int)TweetType.Nuetral, (numDays - searchDay-1)*1+(tempTweet.hourCreated<12?0:0)]++;
+                        tweetTypeCount[(int)TweetType.Nuetral, (dateToday-localSearchDate).Days]++;
                         tempTweet.Mood = TweetType.Nuetral;
                         tempTweet.MoodScore = tmpHappy; //all tmps equal so just choose arbitrary one
                         if (tmpHappy == 0 && (sampleTweets.Count%20==0)) //mod 12 just to prevent too many samples
@@ -234,7 +263,7 @@ namespace TwitterArt
                     }
                     else if (tmpHappy >= tmpAngry && tmpHappy >= tmpSad) //ordering of ifs skews to favour happy: ie. happy:2 angry:2 sad:1 would be happy
                     {
-                        tweetTypeCount[(int)TweetType.Happy,(numDays - searchDay-1)*1+(tempTweet.hourCreated<12?0:0)]++; //set back to *2 and 0:1
+                        tweetTypeCount[(int)TweetType.Happy,(dateToday-localSearchDate).Days]++; //set back to *2 and 0:1
                         tempTweet.Mood = TweetType.Happy;
                         tempTweet.MoodScore = tmpHappy;
                         if (bestTweet[(int)TweetType.Happy] < tmpHappy)
@@ -242,7 +271,7 @@ namespace TwitterArt
                             sampleTweets.Insert(0, tempTweet); 
                             bestTweet[(int)TweetType.Happy] = tmpHappy;
                         }
-                        else if (bestTweet[(int)TweetType.Happy] <= tmpHappy && tweetTotalCount[numDays - searchDay-1] % 2 == 0)
+                        else if (bestTweet[(int)TweetType.Happy] <= tmpHappy && tweetTotalCount[(dateToday - localSearchDate).Days] % 2 == 0)
                         {
                             sampleTweets.Add( tempTweet); ;
                             bestTweet[(int)TweetType.Happy] = tmpHappy;
@@ -250,7 +279,7 @@ namespace TwitterArt
                     }
                     else if (tmpAngry >= tmpHappy && tmpAngry >= tmpSad)
                     {
-                        tweetTypeCount[(int)TweetType.Angry,(numDays - searchDay-1)*1+(tempTweet.hourCreated<12?0:0)]++;
+                        tweetTypeCount[(int)TweetType.Angry,(dateToday-localSearchDate).Days]++;
                         tempTweet.Mood = TweetType.Angry;
                         tempTweet.MoodScore = tmpAngry;
                         if (bestTweet[(int)TweetType.Angry] < tmpAngry)
@@ -258,7 +287,7 @@ namespace TwitterArt
                             sampleTweets.Insert(0, tempTweet);
                             bestTweet[(int)TweetType.Angry] = tmpAngry;
                         }
-                        else if ( (bestTweet[(int)TweetType.Angry] <= tmpAngry && tweetTotalCount[numDays - searchDay-1] % 2 == 0))
+                        else if ((bestTweet[(int)TweetType.Angry] <= tmpAngry && tweetTotalCount[(dateToday - localSearchDate).Days] % 2 == 0))
                         {
                             sampleTweets.Add(tempTweet);
                             bestTweet[(int)TweetType.Angry] = tmpAngry;
@@ -266,7 +295,7 @@ namespace TwitterArt
                     }
                     else if (tmpSad >= tmpHappy && tmpSad >= tmpAngry)
                     {
-                        tweetTypeCount[(int)TweetType.Sad,(numDays - searchDay-1)*1+(tempTweet.hourCreated<12?0:0)]++;
+                        tweetTypeCount[(int)TweetType.Sad,(dateToday-localSearchDate).Days]++;
                         tempTweet.Mood = TweetType.Sad;
                         tempTweet.MoodScore = tmpSad;
                         if (bestTweet[(int)TweetType.Sad] < tmpSad)
@@ -274,7 +303,8 @@ namespace TwitterArt
                             sampleTweets.Insert(0,tempTweet);
                             bestTweet[(int)TweetType.Sad] = tmpSad;
                         }
-                        else if (bestTweet[(int)TweetType.Sad] <= tmpSad &&  tweetTotalCount[numDays - searchDay-1] % 2 ==0){
+                        else if (bestTweet[(int)TweetType.Sad] <= tmpSad && tweetTotalCount[(dateToday - localSearchDate).Days] % 2 == 0)
+                        {
                             sampleTweets.Add( tempTweet);
                             bestTweet[(int)TweetType.Sad] = tmpSad;
                         }
@@ -283,15 +313,32 @@ namespace TwitterArt
                      tempTweet.ImageMood= "Images/" + tempTweet.Mood.ToString().ToLower() + "Facesm.png";
                 }
 
-                if (searchDay > 0)
+                if (Int32.Parse(root["page"].ToString()) < numPages ) 
                 {
-                    //move on to the next day
-                    nextDay();
+                    nextPage(localSearchDate, root["max_id_str"].ToString(), Int32.Parse(root["page"].ToString()));
                 }
-                else
+                else{
+                    threadDayComplete[(dateToday-localSearchDate).Days]=true;
+                }
+
+              //if all threads done
+                bool allDone = true;
+                for (int i = 0; i < threadDayComplete.Length; i++)
                 {
+                    allDone = (allDone && threadDayComplete[i]);
+                }
+                if (allDone)
+                {
+                    allThreadsDone();
+                }               
+        }
+        }
+
+        private void allThreadsDone()
+        {
+             
                     //Set last history x axis label                                        
-                    textBlockHistoryLabels[numDays - 1].Text = dateToday.Subtract(TimeSpan.FromDays(searchDay)).DayOfWeek.ToString().Substring(0, 3);
+                    textBlockHistoryLabels[numDays - 1].Text = dateToday.DayOfWeek.ToString().Substring(0, 3);
 
                     //Normalize values
                     for (int i = 0; i < numDays; i++)
@@ -332,9 +379,6 @@ namespace TwitterArt
                     doSamples();
                 }
 
-            }
-        }
-
         private void sanitizeSample( TwitterItem tmpTwt)
         {
             for (int i = 0; i < badWords.Length; i++)
@@ -369,36 +413,37 @@ namespace TwitterArt
 
         }
 
-        private void nextDay()
+        private void nextDay(int localSearchDay)
         {
             WebClient clientTmp = new WebClient();
             clientTmp.DownloadStringCompleted += new DownloadStringCompletedEventHandler(client_DownloadStringCompleted);
 
             DateTime tmpDate = new DateTime();
-            tmpDate = dateToday.Subtract(TimeSpan.FromDays(searchDay));
+            tmpDate = dateToday.Subtract(TimeSpan.FromDays(localSearchDay));
             //Add current day of week to xAxis labels
-            textBlockHistoryLabels[numDays - searchDay-1].Text = tmpDate.DayOfWeek.ToString().Substring(0, 3);
-
+            textBlockHistoryLabels[numDays - localSearchDay - 1].Text = tmpDate.DayOfWeek.ToString().Substring(0, 3);
 
             string maxID = ""; //should be blank if first page.
-            //Do next page
-            if (GETpage < numPages)
-            {
-                GETpage += pagesPerIteration ;
-                maxID = "&max_id=" + root["max_id_str"];
-            }
-            else // do first page next day.
-            {
-                //reset search days and counts            
-                searchDay--;
-                GETpage = 1;
-            }
+           // GETpage = 1;
 
-
-            tmpDate = dateToday.Subtract(TimeSpan.FromDays(searchDay)); 
-            clientTmp.DownloadStringAsync(new Uri("http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A"+dateToday.Year+"-" + tmpDate.Subtract(TimeSpan.FromDays(1)).Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Subtract(TimeSpan.FromDays(1)).Day) + "%20until%3A"+dateToday.Year+"-" + tmpDate.Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Day)+"&rpp=100&lang=en&page=" + GETpage + maxID + geocode + "&result_type=recent"));
-            
+            clientTmp.DownloadStringAsync(new Uri("http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A"+dateToday.Year+"-" + tmpDate.Subtract(TimeSpan.FromDays(1)).Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Subtract(TimeSpan.FromDays(1)).Day) + "%20until%3A"+dateToday.Year+"-" + tmpDate.Month.ToString().PadLeft(2, '0') + "-" + (tmpDate.Day)+"&rpp=100&lang=en&page=1" + maxID + geocode + "&result_type=recent"));            
         }
+
+        private void nextPage(DateTime localSearchDate, string localMaxid, int getPage) //todo get 'next page' from root in parent and pass in and use that.
+        {
+            WebClient clientTmp = new WebClient();
+            clientTmp.DownloadStringCompleted += new DownloadStringCompletedEventHandler(client_DownloadStringCompleted);
+
+            string maxID = ""; //should be blank if first page.   
+
+                getPage=getPage+pagesPerIteration;
+                maxID = "&max_id=" + localMaxid;
+                clientTmp.DownloadStringAsync(new Uri("http://search.twitter.com/search.json?q=" + textBox1.Text + "%20since%3A" + localSearchDate.Subtract(TimeSpan.FromDays(1)).Year.ToString() + "-" + localSearchDate.Subtract(TimeSpan.FromDays(1)).Month.ToString().PadLeft(2, '0') + "-" + (localSearchDate.Subtract(TimeSpan.FromDays(1)).Day) + "%20until%3A" + dateToday.Year + "-" + localSearchDate.Month.ToString().PadLeft(2, '0') + "-" + (localSearchDate.Day) + "&rpp=100&lang=en&page=" + getPage + maxID + geocode + "&result_type=recent"));            
+         
+
+        }
+
+
         private bool setLoadingImage()
         {
             networkAvailable = NetworkInterface.GetIsNetworkAvailable();
