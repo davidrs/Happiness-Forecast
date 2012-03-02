@@ -56,6 +56,7 @@ namespace TwitterArt
                                             "suffer","sufer", "torment", "agony", "pain","fear", "distres", "grief", "angst", "affliction", "anxiety","miserable", "depres","darkness","scared","crying", "gloom","alone", "morose",  "dismal", "moping", "glum", "unhappy" };
         string[] badWords = new string[] { "shit", "fuck", "asshole", "dick", "pussy", "cunt", "bitch" };
 
+        bool doneLoading = false;
         //v1
         string latitude, longitude;
         List<TwitterItem> sampleTweets = new List<TwitterItem>();
@@ -128,6 +129,9 @@ namespace TwitterArt
                 // Add event handlers for StatusChanged and PositionChanged events
                 watcher.StatusChanged += new EventHandler<GeoPositionStatusChangedEventArgs>(watcher_StatusChanged);
                 watcher.PositionChanged += new EventHandler<GeoPositionChangedEventArgs<GeoCoordinate>>(watcher_PositionChanged);
+
+            //load saved settings
+                loadSavedSettings();
 
                 //Loading image
                 if (setLoadingImage()) //false means no network connection available
@@ -227,7 +231,11 @@ namespace TwitterArt
                 DateTime localSearchDate = dateToday;
                 if (date != "")
                 {
-                    localSearchDate = DateTime.ParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture);  //"Sat, 28 Jan 2012 05:27:42 +0000"//"ddd, dd MMM yyyy HH:mm:ss zzz"
+                    if (date.Substring(date.Length - 1) == "&")
+                    {
+                        date = date.Substring(0, date.Length - 1);
+                    }
+                    localSearchDate = DateTime.ParseExact(date, "yyyy-MM-d", CultureInfo.InvariantCulture);  //"Sat, 28 Jan 2012 05:27:42 +0000"//"ddd, dd MMM yyyy HH:mm:ss zzz"
                 }
 
 
@@ -586,6 +594,26 @@ namespace TwitterArt
             listBox1.ItemsSource = tmpTweets;                      
         }
 
+        private void loadSavedSettings()
+        {
+
+            var settings = IsolatedStorageSettings.ApplicationSettings;
+            bool tmpCensor = false;
+            if (settings.TryGetValue("searchText", out searchString))
+            {
+                textBox1.Text = searchString;
+            }
+            if (settings.TryGetValue("useGPS", out useGPS))
+            {
+                checkBoxGPS.IsChecked = useGPS;
+            }
+            if (settings.TryGetValue("censorLanguage", out tmpCensor))
+            {
+                checkBoxCensor.IsChecked = tmpCensor;
+            }
+            doneLoading = true;
+        }
+
         private void textBox1_TextChanged(object sender, TextChangedEventArgs e)
         {
 
@@ -694,20 +722,8 @@ namespace TwitterArt
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
-            var settings = IsolatedStorageSettings.ApplicationSettings;
-            bool tmpCensor = false;
-            if (settings.TryGetValue("searchText", out searchString))
-            {
-                textBox1.Text = searchString;
-            }
-            if (settings.TryGetValue("useGPS", out useGPS))
-            {
-                checkBoxGPS.IsChecked = useGPS;
-            }
-            if (settings.TryGetValue("censorLanguage", out tmpCensor))
-            {
-                checkBoxCensor.IsChecked = tmpCensor;
-            }
+            loadSavedSettings();
+
         }
 
 

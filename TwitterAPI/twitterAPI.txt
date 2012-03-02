@@ -1,0 +1,859 @@
+Using the Twitter Search API
+
+
+
+ Updated on Fri, 2011-12-02 11:27 
+
+
+
+The Twitter Search API is a dedicated API for running searches against the real-time index of recent Tweets. There are a number of important things to know before using the Search API which are explained below.
+ 
+Limitations
+ 
+•The Search API is not complete index of all Tweets, but instead an index of recent Tweets. At the moment that index includes between 6-9 days of Tweets.
+•You cannot use the Search API to find Tweets older than about a week.
+•Queries can be limited due to complexity. If this happens the Search API will respond with the error: {"error":"Sorry, your query is too complex. Please reduce complexity and try again."}
+•Search does not support authentication meaning all queries are made anonymously.
+•Search is focused in relevance and not completeness. This means that some Tweets and users may be missing from search results. If you want to match for completeness you should consider using the Streaming API instead.
+•The near operator cannot be used by the Search API. Instead you should use the geocode parameter.
+ 
+Recent Enhancements
+ 
+•The user IDs returned in the Search API now match the user IDs utilized in the Twitter REST & Streaming APIs. You no longer need to maintain a mapping of "search IDs" and "real IDs."
+•Use include_entities=true to have Tweet Entities included for mentions, links, media, and hashtags.
+•in_reply_to_status_id and in_reply_to_status_id_str are now included with @replies, allowing you to know the replied-to status ID, which can be looked up using GET statuses/show/:id.
+ 
+Rate Limits
+ 
+
+The Rate Limits for the Search API are not the same as for the REST API. When using the Search API you are not restricted by a certain number of API requests per hour, but instead by the complexity and frequency.
+
+As requests to the Search API are anonymous, the rate limit is measured against the requesting client IP.
+
+To prevent abuse the rate limit for Search is not published. If you are rate limited, the Search API will respond with an HTTP 420 Error. {"error":"You have been rate limited. Enhance your calm."}. 
+
+Best Practices
+ 
+•Ensure all parameters are properly URL encoded.
+•Include a since_id when asking for Tweets. since_id should be set to the value of the last Tweet you received or the max_id from the Search API response. If the since_id you provide is older than the index allows, it will be updated to the oldest since_id available.
+•Include a meaningful and unique User Agent string when using this method. It helps identify your traffic when you use shared hosting and can be used by our support team to triage any issues you report.
+•Limit your searches to 10 keywords and operators.
+ 
+Constructing a Query
+ 
+
+If you are not sure how to construct a query for the Search API you should:
+1.Run your search on twitter.com/search.
+2.Copy the URL. For example: https://twitter.com/#!/search/%40twitterapi
+3.Replace https://twitter.com/#!/search/ with http://search.twitter.com/search.json?q=. For example: http://search.twitter.com/search.json?q=%40twitterapi
+ 
+Search Operators
+ 
+
+In addition to the parameters listed in the Search API documentation, there are a number of operators you can use to modify the behavior of query.
+
+
+Example
+
+Finds tweets...
+
+
+twitter search
+
+containing both "twitter" and "search". This is the default operator
+
+
+
+"happy hour"
+
+containing the exact phrase "happy hour"
+
+
+
+love OR hate
+
+containing either "love" or "hate" (or both)
+
+
+
+beer -root
+
+containing "beer" but not "root"
+
+
+
+#haiku
+
+containing the hashtag "haiku"
+
+
+
+from:twitterapi
+
+sent from the user @twitterapi
+
+
+
+to:twitterapi
+
+sent to the user @twitterapi
+
+
+
+place:opentable:2
+
+about the place with OpenTable ID 2
+
+
+
+place:247f43d441defc03
+
+about the place with Twitter ID 247f43d441defc03
+
+
+
+@twitterapi
+
+mentioning @twitterapi
+
+
+
+superhero since:2011-05-09
+
+containing "superhero" and sent since date "2011-05-09" (year-month-day).
+
+
+
+twitterapi until:2011-05-09
+
+containing "twitterapi" and sent before the date "2011-05-09".
+
+
+
+movie -scary :)
+
+containing "movie", but not "scary", and with a positive attitude.
+
+
+
+flight :(
+
+containing "flight" and with a negative attitude.
+
+
+
+traffic ?
+
+containing "traffic" and asking a question.
+
+
+
+hilarious filter:links
+
+containing "hilarious" and with a URL.
+
+
+
+news source:tweet_button
+
+containing "news" and entered via the Tweet Button
+
+ 
+Notes about Search Operators
+ 
+
+since and until
+•do not support the negation (-) operator.
+•should be entered in the format year-month-day or yyyy-mm-dd.
+•are assumed to be from/to 00:00 UTC.
+•cannot be set into the future. If until is in the future you will receive an HTTP 403 error with the message: {"error":"You cannot use an 'until:' date in the future"}. If since is in the future you will receive an HTTP 403 error with the message: {"error":"since_id too recent, poll less frequently"}.
+ 
+
+source
+•can only be combined with a keyword parameter. If you do not include a keyword you will receive an HTTP 403 error with the message: {"error":"You must enter a query."}.
+•supports multi-word sources by using _ instead of spaces. For example, the source "Tweet Button" should be entered as source: tweet_button
+ 
+
+place
+•supports many data set aliases. Finding Tweets about Places has the complete list of aliases.
+ 
+Source Metadata
+ 
+
+result_type
+
+Results will sometimes contain a result_type field into the metadata with a value of either "recent" or "popular". Popular results are derived by an algorithm that Twitter computes, and up to 3 will appear in the default mixed mode that the Search API operates under. Popular results include another node in the metadata called recent_retweets. This field indicates how many retweets the Tweet has had.
+ 
+Oddities
+ 
+
+The Search API has been built up over time and some of it's original behaviors are maintained. This behaviors can lead to confusion if you don't expect them.
+
+Location data is only included if the query includes the geocode parameter, and the user Tweeted with Geo information. When conduction Geo searches, the Search API will:
+•Attempt to find Tweets which have a place or lat/long within the queried geocode.
+•Attempt to find Tweets created by users whose profile location can be reverse geocoded into a lat/long within the queried geocode.
+
+This means it is possible to receive Tweets which do not include a latitude or longitude.
+
+If a Tweet contains a URL, the Search API will match to the fully expanded version of the URL. This means a keyword search may return results which appear to not include the keywords you provide. Instead, the keyword is in the expanded version of the URL in the Tweet.
+
+The user_ids in the Search API responses do not match those for Twitter.com by default. Use the with_twitter_user_id=true parameter to return IDs which match Twitter.com.
+
+
+Tweets to @twitter created before the 7th May 2011 and within 25 miles of Twitter HQ in San Francisco
+
+http://search.twitter.com/search?q=to%3Atwitter%20until%3A2011-05-07&geocode=37.781157,-122.398720,25mi
+
+===================================================
+GET search
+Updated on Tue, 2012-01-03 09:04 
+
+
+Returns tweets that match a specified query. To best learn how to use Twitter Search effectively, consult our guide to Using the Twitter Search API
+ 
+Notice: As of April 1st 2010, the Search API provides an option to retrieve "popular tweets" in addition to real-time search results. In an upcoming release, this will become the default and clients that don't want to receive popular tweets in their search results will have to explicitly opt-out. See the result_type parameter below for more information.
+ 
+As of Nov 7, 2011 the Search API returns Twitter user IDs that match the Twitter REST API. You no longer need to maintain multiple ids for the same user.
+ 
+As of Dec, 2011 the Search API now supports all Tweet Entities when using the include_entities=true parameter.
+
+
+Resource URL
+
+ http://search.twitter.com/search.format 
+
+
+Parameters
+
+ 
+q required
+Search query. Should be URL encoded. Queries will be limited by complexity.
+
+Example Values: @noradio
+ 
+callback optional
+Only available for JSON format. If supplied, the response will use the JSONP format with a callback of the given name.
+
+geocode optional
+Returns tweets by users located within a given radius of the given latitude/longitude. The location is preferentially taking from the Geotagging API, but will fall back to their Twitter profile. The parameter value is specified by "latitude,longitude,radius", where radius units must be specified as either "mi" (miles) or "km" (kilometers). Note that you cannot use the near operator via the API to geocode arbitrary locations; however you can use this geocode parameter to search near geocodes directly.
+
+Example Values: 37.781157,-122.398720,1mi
+ 
+lang optional
+Restricts tweets to the given language, given by an ISO 639-1 code.
+
+locale optional
+Specify the language of the query you are sending (only ja is currently effective). This is intended for language-specific clients and the default should work in the majority of cases.
+
+Example Values: ja
+ 
+page optional
+The page number (starting at 1) to return, up to a max of roughly 1500 results (based on rpp * page).
+
+Example Values: 10
+ 
+result_type optional
+Optional. Specifies what type of search results you would prefer to receive. The current default is "mixed." Valid values include:
+•mixed: Include both popular and real time results in the response.
+•recent: return only the most recent results in the response
+•popular: return only the most popular results in the response.
+
+
+Example Values: mixed, recent, popular
+ 
+rpp optional
+The number of tweets to return per page, up to a max of 100.
+
+Example Values: 100
+ 
+show_user optional
+When true, prepends ":" to the beginning of the tweet. This is useful for readers that do not display Atom's author field. The default is false.
+
+until optional
+Optional. Returns tweets generated before the given date. Date should be formatted as YYYY-MM-DD.
+
+Example Values: 2010-03-28
+ 
+since_id optional
+Returns results with an ID greater than (that is, more recent than) the specified ID. There are limits to the number of Tweets which can be accessed through the API. If the limit of Tweets has occured since the since_id, the since_id will be forced to the oldest ID available.
+
+Example Values: 12345
+ 
+include_entities optional
+When set to either true, t or 1, each tweet will include a node called "entities,". This node offers a variety of metadata about the tweet in a discreet structure, including: urls, media and hashtags. Note that user mentions are currently not supported for search and there will be no "user_mentions" key in the entities map. See Tweet Entities for more detail on entities. Please note that entities are only available for JSON responses in the Search API.
+
+Example Values: true
+ 
+
+Example Request
+
+
+
+ 
+
+
+GET
+
+
+http://search.twitter.com/search.json?q=blue%20angels&rpp=5&include_entities=true&result_type=mixed
+ 
+
+Returns 5 mixed results with Twitter.com user IDs plus entities for the term "blue angels":
+ 
+
+1.{
+2.  "completed_in":0.031,
+3.  "max_id":122078461840982016,
+4.  "max_id_str":"122078461840982016",
+5.  "next_page":"?page=2&max_id=122078461840982016&q=blue%20angels&rpp=5",
+6.  "page":1,
+7.  "query":"blue+angels",
+8.  "refresh_url":"?since_id=122078461840982016&q=blue%20angels",
+9.  "results":[
+10.    {
+11.      "created_at":"Thu, 06 Oct 2011 19:36:17 +0000",
+12.      "entities":{
+13.        "urls":[
+14.          {
+15.            "url":"http://t.co/L9JXJ2ee",
+16.            "expanded_url":"http://bit.ly/q9fyz9",
+17.            "display_url":"bit.ly/q9fyz9",
+18.            "indices":[
+19.              37,
+20.              57
+21.            ]
+22.          }
+23.        ]
+24.      },
+25.      "from_user":"SFist",
+26.      "from_user_id":14093707,
+27.      "from_user_id_str":"14093707",
+28.      "geo":null,
+29.      "id":122032448266698752,
+30.      "id_str":"122032448266698752",
+31.      "iso_language_code":"en",
+32.      "metadata":{
+33.        "recent_retweets":3,
+34.        "result_type":"popular"
+35.      },
+36.      "profile_image_url":"http://a3.twimg.com/profile_images/51584619/SFist07_normal.jpg",
+37.      "source":"&lt;a href=&quot;http://twitter.com/tweetbutton&quot; rel=&quot;nofollow&quot;&gt;Tweet Button&lt;/a&gt;",
+38.      "text":"Reminder: Blue Angels practice today http://t.co/L9JXJ2ee",
+39.      "to_user_id":null,
+40.      "to_user_id_str":null
+41.    },
+42.    {
+43.      "created_at":"Thu, 06 Oct 2011 19:41:12 +0000",
+44.      "entities":{
+45. 
+46.      },
+47.      "from_user":"masters212",
+48.      "from_user_id":2242041,
+49.      "from_user_id_str":"2242041",
+50.      "geo":null,
+51.      "id":122033683212419072,
+52.      "id_str":"122033683212419072",
+53.      "iso_language_code":"en",
+54.      "metadata":{
+55.        "recent_retweets":1,
+56.        "result_type":"popular"
+57.      },
+58.      "profile_image_url":"http://a3.twimg.com/profile_images/488532540/rachel25final_normal.jpg",
+59.      "source":"&lt;a href=&quot;http://twitter.com/&quot;&gt;web&lt;/a&gt;",
+60.      "text":"Starting to hear Blue Angels... Not such angels with all of the noise and carbon pollution.",
+61.      "to_user_id":null,
+62.      "to_user_id_str":null
+63.    },
+64.    {
+65.      "created_at":"Thu, 06 Oct 2011 19:39:52 +0000",
+66.      "entities":{
+67. 
+68.      },
+69.      "from_user":"SFBayBridge",
+70.      "from_user_id":182107587,
+71.      "from_user_id_str":"182107587",
+72.      "geo":null,
+73.      "id":122033350327279617,
+74.      "id_str":"122033350327279617",
+75.      "iso_language_code":"en",
+76.      "metadata":{
+77.        "recent_retweets":1,
+78.        "result_type":"popular"
+79.      },
+80.      "profile_image_url":"http://a0.twimg.com/profile_images/1162882917/bbtwitternew_normal.jpg",
+81.      "source":"&lt;a href=&quot;http://twitter.com/&quot;&gt;web&lt;/a&gt;",
+82.      "text":"BZZZzzzZzZzzzZZZZZzZz WHAT? I CAN'T HEAR YOU. THERE ARE BLUE ANGELS. ZZZzzZZZ!",
+83.      "to_user_id":null,
+84.      "to_user_id_str":null
+85.    },
+86.    {
+87.      "created_at":"Thu, 06 Oct 2011 22:39:08 +0000",
+88.      "entities":{
+89. 
+90.      },
+91.      "from_user":"OnDST",
+92.      "from_user_id":265656068,
+93.      "from_user_id_str":"265656068",
+94.      "geo":null,
+95.      "id":122078461840982016,
+96.      "id_str":"122078461840982016",
+97.      "iso_language_code":"nl",
+98.      "metadata":{
+99.        "result_type":"recent"
+100.      },
+101.      "profile_image_url":"http://a3.twimg.com/profile_images/1271597598/OnDST_normal.jpg",
+102.      "source":"&lt;a href=&quot;http://dlvr.it&quot; rel=&quot;nofollow&quot;&gt;dlvr.it&lt;/a&gt;",
+103.      "text":"SF Fleet Week to open with Blue Angels flyovers | Student ...",
+104.      "to_user_id":null,
+105.      "to_user_id_str":null
+106.    },
+107.    {
+108.      "created_at":"Thu, 06 Oct 2011 22:38:51 +0000",
+109.      "entities":{
+110. 
+111.      },
+112.      "from_user":"gusbumper",
+113.      "from_user_id":15912539,
+114.      "from_user_id_str":"15912539",
+115.      "geo":null,
+116.      "id":122078393641603072,
+117.      "id_str":"122078393641603072",
+118.      "iso_language_code":"en",
+119.      "metadata":{
+120.        "result_type":"recent"
+121.      },
+122.      "profile_image_url":"http://a2.twimg.com/profile_images/832286946/pho_normal.jpg",
+123.      "source":"&lt;a href=&quot;http://itunes.apple.com/us/app/twitter/id409789998?mt=12&quot; rel=&quot;nofollow&quot;&gt;Twitter for Mac&lt;/a&gt;",
+124.      "text":"RT @gzahnd: WAKE UP HIPPIES, THE BLUE ANGELS ARE IN TOWN!",
+125.      "to_user_id":null,
+126.      "to_user_id_str":null
+127.    },
+128.    {
+129.      "created_at":"Thu, 06 Oct 2011 22:38:31 +0000",
+130.      "entities":{
+131. 
+132.      },
+133.      "from_user":"LUVTQUILT",
+134.      "from_user_id":32653550,
+135.      "from_user_id_str":"32653550",
+136.      "geo":null,
+137.      "id":122078309004742656,
+138.      "id_str":"122078309004742656",
+139.      "iso_language_code":"en",
+140.      "metadata":{
+141.        "result_type":"recent"
+142.      },
+143.      "profile_image_url":"http://a1.twimg.com/profile_images/1188428056/IMG00007-20100521-1647_1__normal.jpg",
+144.      "source":"&lt;a href=&quot;http://ubersocial.com&quot; rel=&quot;nofollow&quot;&gt;\u00DCberSocial for BlackBerry&lt;/a&gt;",
+145.      "text":"Thursday - Just watched the Blue Angels practice over SF Bay Impressive! What a background.  GGB & Alcatraz. ;) .",
+146.      "to_user_id":null,
+147.      "to_user_id_str":null
+148.    },
+149.    {
+150.      "created_at":"Thu, 06 Oct 2011 22:38:22 +0000",
+151.      "entities":{
+152.        "urls":[
+153.          {
+154.            "url":"http://t.co/fyL8Rs5f",
+155.            "expanded_url":"http://dlvr.it/pfFfj",
+156.            "display_url":"dlvr.it/pfFfj",
+157.            "indices":[
+158.              52,
+159.              72
+160.            ]
+161.          }
+162.        ]
+163.      },
+164.      "from_user":"johnnyfuncheap",
+165.      "from_user_id":20717004,
+166.      "from_user_id_str":"20717004",
+167.      "geo":null,
+168.      "id":122078271478317056,
+169.      "id_str":"122078271478317056",
+170.      "iso_language_code":"en",
+171.      "metadata":{
+172.        "result_type":"recent"
+173.      },
+174.      "profile_image_url":"http://a0.twimg.com/profile_images/1130541908/funcheap_icon_twitter_normal.gif",
+175.      "source":"&lt;a href=&quot;http://dlvr.it&quot; rel=&quot;nofollow&quot;&gt;dlvr.it&lt;/a&gt;",
+176.      "text":"10/8/11: Blue Angels Wine Tasting | Treasure Island http://t.co/fyL8Rs5f",
+177.      "to_user_id":null,
+178.      "to_user_id_str":null
+179.    },
+180.    {
+181.      "created_at":"Thu, 06 Oct 2011 22:37:28 +0000",
+182.      "entities":{
+183.        "urls":[
+184.          {
+185.            "url":"http://t.co/KfzEqOWM",
+186.            "expanded_url":"http://married2travel.com/2600/san-francisco-day3-golden-gate-park-pier-39-blue-angels/",
+187.            "display_url":"married2travel.com/2600/san-franc\u2026",
+188.            "indices":[
+189.              47,
+190.              67
+191.            ]
+192.          }
+193.        ]
+194.      },
+195.      "from_user":"espenorio",
+196.      "from_user_id":52736683,
+197.      "from_user_id_str":"52736683",
+198.      "geo":null,
+199.      "id":122078043664695296,
+200.      "id_str":"122078043664695296",
+201.      "iso_language_code":"en",
+202.      "metadata":{
+203.        "result_type":"recent"
+204.      },
+205.      "profile_image_url":"http://a0.twimg.com/profile_images/1574863913/sheil_normal.png",
+206.      "source":"&lt;a href=&quot;http://twitter.com/&quot;&gt;web&lt;/a&gt;",
+207.      "text":"San Francisco 2010 Fleet week photos and video http://t.co/KfzEqOWM",
+208.      "to_user_id":null,
+209.      "to_user_id_str":null
+210.    }
+211.  ],
+212.  "results_per_page":5,
+213.  "since_id":0,
+214.  "since_id_str":"0"
+215.}
+
+
+Returns first page of mixed results for the search term "Twitter API":
+ 
+GET http://search.twitter.com/search.json?q=Twitter%20API&result_type=mixed 
+
+
+1.{
+2.  "max_id": 27836852555751424,
+3.  "results": [
+4.    {
+5.      "created_at": "Wed, 19 Jan 2011 21:16:37 +0000",
+6.      "profile_image_url": "http://a2.twimg.com/sticky/default_profile_images/default_profile_1_normal.png",
+7.      "from_user_id_str": "191709163",
+8.      "id_str": "27836852555751424",
+9.      "from_user": "DanLabTesting",
+10.      "text": "Twitter api: 1234455",
+11.      "to_user_id": null,
+12.      "metadata": {
+13.        "result_type": "recent"
+14.      },
+15.      "id": 27836852555751424,
+16.      "geo": null,
+17.      "from_user_id": 191709163,
+18.      "iso_language_code": "en",
+19.      "source": "&lt;a href=&quot;http://www.danlabgames.com/index.php?computer=ipad&quot; rel=&quot;nofollow&quot;&gt;Wacka Monsta&lt;/a&gt;",
+20.      "to_user_id_str": null
+21.    },
+22.    {
+23.      "created_at": "Wed, 19 Jan 2011 21:12:02 +0000",
+24.      "profile_image_url": "http://a0.twimg.com/profile_images/1142619698/DSC_0195_normal.jpg",
+25.      "from_user_id_str": "165544885",
+26.      "id_str": "27835698383945728",
+27.      "from_user": "Deberamatkin",
+28.      "text": "Fetching the number of followers without using any Twitter API http://pr9.in/4q",
+29.      "to_user_id": null,
+30.      "metadata": {
+31.        "result_type": "recent"
+32.      },
+33.      "id": 27835698383945728,
+34.      "geo": null,
+35.      "from_user_id": 165544885,
+36.      "iso_language_code": "en",
+37.      "source": "&lt;a href=&quot;http://www.exaspring.com&quot; rel=&quot;nofollow&quot;&gt;ExaSpring Information Services&lt;/a&gt;",
+38.      "to_user_id_str": null
+39.    },
+40.    {
+41.      "created_at": "Wed, 19 Jan 2011 20:57:35 +0000",
+42.      "profile_image_url": "http://a3.twimg.com/profile_images/1093562803/__F1000040mini_normal.jpg",
+43.      "from_user_id_str": "95281337",
+44.      "id_str": "27832064640290817",
+45.      "from_user": "Lito_tweet",
+46.      "text": "More info can be found here http://support.twitter.com/articles/15364-about-twitter-limits-update-api-dm-and-following",
+47.      "to_user_id": null,
+48.      "metadata": {
+49.        "result_type": "recent"
+50.      },
+51.      "id": 27832064640290817,
+52.      "geo": null,
+53.      "from_user_id": 95281337,
+54.      "iso_language_code": "en",
+55.      "source": "&lt;a href=&quot;http://yubitter.com/&quot; rel=&quot;nofollow&quot;&gt;yubitter&lt;/a&gt;",
+56.      "to_user_id_str": null
+57.    },
+58.    {
+59.      "created_at": "Wed, 19 Jan 2011 20:53:18 +0000",
+60.      "profile_image_url": "http://a1.twimg.com/profile_images/1196625301/Twitter_normal.JPG",
+61.      "from_user_id_str": "77719707",
+62.      "id_str": "27830982988005377",
+63.      "from_user": "g_a_x",
+64.      "text": "RT @ramirezviki: RT @g_a_x: &quot;Twitter Status: Twitter API rate excedeed&quot; WTF??? // Que dejes de twittearrrr!!!!!!!!!!!  // JJAJAJAJAJJAAA",
+65.      "to_user_id": null,
+66.      "metadata": {
+67.        "result_type": "recent"
+68.      },
+69.      "id": 27830982988005377,
+70.      "geo": null,
+71.      "from_user_id": 77719707,
+72.      "iso_language_code": "en",
+73.      "source": "&lt;a href=&quot;http://www.tweetdeck.com&quot; rel=&quot;nofollow&quot;&gt;TweetDeck&lt;/a&gt;",
+74.      "to_user_id_str": null
+75.    },
+76.    {
+77.      "created_at": "Wed, 19 Jan 2011 20:51:06 +0000",
+78.      "profile_image_url": "http://a2.twimg.com/profile_images/673715309/danlablogo_normal.png",
+79.      "from_user_id_str": "20913275",
+80.      "id_str": "27830431516729344",
+81.      "from_user": "DanLabGames",
+82.      "text": "Working on Facebook and Twitter API on iPhone.. Silly Piece of code. But it Work",
+83.      "to_user_id": null,
+84.      "metadata": {
+85.        "result_type": "recent"
+86.      },
+87.      "id": 27830431516729344,
+88.      "geo": null,
+89.      "from_user_id": 20913275,
+90.      "iso_language_code": "en",
+91.      "source": "&lt;a href=&quot;http://www.danlabgames.com/index.php?computer=ipad&quot; rel=&quot;nofollow&quot;&gt;Wacka Monsta&lt;/a&gt;",
+92.      "to_user_id_str": null
+93.    },
+94.    {
+95.      "created_at": "Wed, 19 Jan 2011 20:44:42 +0000",
+96.      "profile_image_url": "http://a1.twimg.com/profile_images/1220195008/BeautyIsHerName_normal.JPG",
+97.      "from_user_id_str": "180040602",
+98.      "id_str": "27828818869747713",
+99.      "from_user": "MozBWanKinobi",
+100.      "text": "@Patroose It's slow as shit, that damn Twitter API thing pops up every 5 minutes, and won't post tweets half the time, they need to fix it",
+101.      "to_user_id": 16219315,
+102.      "metadata": {
+103.        "result_type": "recent"
+104.      },
+105.      "id": 27828818869747713,
+106.      "geo": null,
+107.      "to_user": "Patroose",
+108.      "from_user_id": 180040602,
+109.      "iso_language_code": "en",
+110.      "source": "&lt;a href=&quot;http://twitter.com/&quot;&gt;web&lt;/a&gt;",
+111.      "to_user_id_str": "16219315"
+112.    },
+113.    {
+114.      "created_at": "Wed, 19 Jan 2011 20:42:13 +0000",
+115.      "profile_image_url": "http://a3.twimg.com/profile_images/1167064690/b460f7b0-d6ac-4d8a-b025-998cadb31acc_normal.png",
+116.      "from_user_id_str": "11861298",
+117.      "id_str": "27828194379833345",
+118.      "from_user": "twittwootwiggy",
+119.      "text": "@USoBritain @elejamie Cheers, if i'm on the list i will prove i'm worth it. http://api.twitter.com/EDLinfidel/wankers#",
+120.      "to_user_id": 105839068,
+121.      "metadata": {
+122.        "result_type": "recent"
+123.      },
+124.      "id": 27828194379833345,
+125.      "geo": null,
+126.      "to_user": "USoBritain",
+127.      "from_user_id": 11861298,
+128.      "iso_language_code": "en",
+129.      "source": "&lt;a href=&quot;http://twitter.com/&quot;&gt;web&lt;/a&gt;",
+130.      "to_user_id_str": "105839068"
+131.    },
+132.    {
+133.      "created_at": "Wed, 19 Jan 2011 20:35:29 +0000",
+134.      "profile_image_url": "http://a2.twimg.com/profile_images/1197946386/Seb_lasLe_as_normal.jpg",
+135.      "from_user_id_str": "155070729",
+136.      "id_str": "27826502271762432",
+137.      "from_user": "iSebx",
+138.      "text": "RT @g_a_x &quot;Twitter Status: Twitter API rate excedeed&quot; WTF??? // estaba por postear lo mismo no me dejaba subir una foto",
+139.      "to_user_id": null,
+140.      "metadata": {
+141.        "result_type": "recent"
+142.      },
+143.      "id": 27826502271762432,
+144.      "geo": null,
+145.      "from_user_id": 155070729,
+146.      "iso_language_code": "en",
+147.      "source": "&lt;a href=&quot;http://www.tweetdeck.com&quot; rel=&quot;nofollow&quot;&gt;TweetDeck&lt;/a&gt;",
+148.      "to_user_id_str": null
+149.    },
+150.    {
+151.      "created_at": "Wed, 19 Jan 2011 20:24:26 +0000",
+152.      "profile_image_url": "http://a2.twimg.com/profile_images/859603564/johannes_normal.jpg",
+153.      "from_user_id_str": "104685382",
+154.      "id_str": "27823718839361536",
+155.      "from_user": "seo_depp",
+156.      "text": "rt @davide_rosi2011#analytics New ActionScript 3 Library For The API: We love simplifying access to Google Analy... http://bit.ly/i8k0IA",
+157.      "to_user_id": null,
+158.      "metadata": {
+159.        "result_type": "recent"
+160.      },
+161.      "id": 27823718839361536,
+162.      "geo": null,
+163.      "from_user_id": 104685382,
+164.      "iso_language_code": "en",
+165.      "source": "&lt;a href=&quot;http://twitterfeed.com&quot; rel=&quot;nofollow&quot;&gt;twitterfeed&lt;/a&gt;",
+166.      "to_user_id_str": null
+167.    },
+168.    {
+169.      "created_at": "Wed, 19 Jan 2011 20:21:46 +0000",
+170.      "profile_image_url": "http://a1.twimg.com/profile_images/1196625301/Twitter_normal.JPG",
+171.      "from_user_id_str": "77719707",
+172.      "id_str": "27823049667510272",
+173.      "from_user": "g_a_x",
+174.      "text": "&quot;Twitter Status: Twitter API rate excedeed&quot; WTF???",
+175.      "to_user_id": null,
+176.      "metadata": {
+177.        "result_type": "recent"
+178.      },
+179.      "id": 27823049667510272,
+180.      "geo": null,
+181.      "from_user_id": 77719707,
+182.      "iso_language_code": "en",
+183.      "source": "&lt;a href=&quot;http://www.tweetdeck.com&quot; rel=&quot;nofollow&quot;&gt;TweetDeck&lt;/a&gt;",
+184.      "to_user_id_str": null
+185.    },
+186.    {
+187.      "created_at": "Wed, 19 Jan 2011 20:05:22 +0000",
+188.      "profile_image_url": "http://a1.twimg.com/profile_images/1102380575/61918c9a-8d5c-4390-b41f-b234398cd5d4_normal.png",
+189.      "from_user_id_str": "7654007",
+190.      "id_str": "27818920278757376",
+191.      "from_user": "ConMend",
+192.      "text": "#TwitterHelp #Help #CallingofTheGeeks Please help me get rid of the Twitter API dialogue box that pops up every bleeding minute!",
+193.      "to_user_id": null,
+194.      "metadata": {
+195.        "result_type": "recent"
+196.      },
+197.      "id": 27818920278757376,
+198.      "geo": null,
+199.      "from_user_id": 7654007,
+200.      "iso_language_code": "en",
+201.      "source": "&lt;a href=&quot;http://twitter.com/&quot;&gt;web&lt;/a&gt;",
+202.      "to_user_id_str": null
+203.    },
+204.    {
+205.      "created_at": "Wed, 19 Jan 2011 19:55:36 +0000",
+206.      "profile_image_url": "http://a3.twimg.com/profile_images/1167064690/b460f7b0-d6ac-4d8a-b025-998cadb31acc_normal.png",
+207.      "from_user_id_str": "11861298",
+208.      "id_str": "27816463830089728",
+209.      "from_user": "twittwootwiggy",
+210.      "text": "Its easy to get on http://api.twitter.com/#!/EDLinfidel/wankers @Andrea_UrbanFox just ask @EDLinfidel a Hypothetical question referring #EDL",
+211.      "to_user_id": null,
+212.      "metadata": {
+213.        "result_type": "recent"
+214.      },
+215.      "id": 27816463830089728,
+216.      "geo": null,
+217.      "from_user_id": 11861298,
+218.      "iso_language_code": "en",
+219.      "source": "&lt;a href=&quot;http://twitter.com/&quot;&gt;web&lt;/a&gt;",
+220.      "to_user_id_str": null
+221.    },
+222.    {
+223.      "created_at": "Wed, 19 Jan 2011 19:55:10 +0000",
+224.      "profile_image_url": "http://a0.twimg.com/profile_images/585494683/13038_613894593395_24403188_35452430_7524658_n_normal.jpg",
+225.      "from_user_id_str": "1493373",
+226.      "id_str": "27816354073550848",
+227.      "from_user": "mirandafte",
+228.      "text": "@mirandafte testing some twitter API - ness",
+229.      "to_user_id": 1493373,
+230.      "metadata": {
+231.        "result_type": "recent"
+232.      },
+233.      "id": 27816354073550848,
+234.      "geo": null,
+235.      "to_user": "mirandafte",
+236.      "from_user_id": 1493373,
+237.      "iso_language_code": "en",
+238.      "source": "&lt;a href=&quot;http://twitter.com/&quot;&gt;web&lt;/a&gt;",
+239.      "to_user_id_str": "1493373"
+240.    },
+241.    {
+242.      "created_at": "Wed, 19 Jan 2011 19:55:07 +0000",
+243.      "profile_image_url": "http://a0.twimg.com/profile_images/1213136572/110105-195452_normal.jpg",
+244.      "from_user_id_str": "134087646",
+245.      "id_str": "27816342371434496",
+246.      "from_user": "rachel8973",
+247.      "text": "Actually @TweetDeck it's not your fault it's the useless @twitter API. But you still smell",
+248.      "to_user_id": null,
+249.      "metadata": {
+250.        "result_type": "recent"
+251.      },
+252.      "id": 27816342371434496,
+253.      "geo": null,
+254.      "from_user_id": 134087646,
+255.      "iso_language_code": "en",
+256.      "source": "&lt;a href=&quot;http://seesmic.com/app&quot; rel=&quot;nofollow&quot;&gt;Seesmic Web&lt;/a&gt;",
+257.      "to_user_id_str": null
+258.    },
+259.    {
+260.      "created_at": "Wed, 19 Jan 2011 19:52:39 +0000",
+261.      "profile_image_url": "http://a3.twimg.com/profile_images/1172946788/eagle-flag-4_normal.jpg",
+262.      "from_user_id_str": "174036699",
+263.      "id_str": "27815721295679488",
+264.      "from_user": "benny_hans",
+265.      "text": "One Reason For Those Twitter API Limits: Search Volume is Soaring http://bit.ly/aksMW2 #twitter #twittertips",
+266.      "to_user_id": null,
+267.      "metadata": {
+268.        "result_type": "recent"
+269.      },
+270.      "id": 27815721295679488,
+271.      "geo": null,
+272.      "from_user_id": 174036699,
+273.      "iso_language_code": "en",
+274.      "source": "&lt;a href=&quot;http://twitter.com/&quot;&gt;web&lt;/a&gt;",
+275.      "to_user_id_str": null
+276.    }
+277.  ],
+278.  "since_id": 0,
+279.  "refresh_url": "?since_id=27836852555751424&q=Twitter+API",
+280.  "next_page": "?page=2&max_id=27836852555751424&q=Twitter+API",
+281.  "page": 1,
+282.  "results_per_page": 15,
+283.  "completed_in": 0.075744,
+284.  "since_id_str": "0",
+285.  "query": "Twitter+API",
+286.  "max_id_str": "27836852555751424"
+287.}
+ 
+
+
+GET
+
+
+http://search.twitter.com/search.json?q=twitterapi&rpp=1
+ 
+
+As of November 15th, 2011, the Search API returns a from_user_name field with the display name for the owner of a Tweet, and, if the Tweet is a reply, a to_user_name field with the display name for the user being replied to.
+ 
+
+1.{
+2.  "completed_in": 0.012,
+3.  "max_id": 136536013832069120,
+4.  "max_id_str": "136536013832069120",
+5.  "next_page": "?page=2&max_id=136536013832069120&q=twitterapi&rpp=1",
+6.  "page": 1,
+7.  "query": "twitterapi",
+8.  "refresh_url": "?since_id=136536013832069120&q=twitterapi",
+9.  "results": [
+10.    {
+11.      "created_at": "Tue, 15 Nov 2011 20:08:17 +0000",
+12.      "from_user": "fakekurrik",
+13.      "from_user_id": 370773112,
+14.      "from_user_id_str": "370773112",
+15.      "from_user_name": "fakekurrik",
+16.      "geo": null,
+17.      "id": 136536013832069120,
+18.      "id_str": "136536013832069120",
+19.      "iso_language_code": "en",
+20.      "metadata": {
+21.        "result_type": "recent"
+22.      },
+23.      "profile_image_url": "http://a1.twimg.com/profile_images/1540298033/phatkicks_normal.jpg",
+24.      "source": "&lt;a href=&quot;http://twitter.com/&quot;&gt;web&lt;/a&gt;",
+25.      "text": "@twitterapi, keep on keeping it real",
+26.      "to_user": "twitterapi",
+27.      "to_user_id": 6253282,
+28.      "to_user_id_str": "6253282",
+29.      "to_user_name": "Twitter API"
+30.    }
+31.  ],
+32.  "results_per_page": 1,
+33.  "since_id": 0,
+34.  "since_id_str": "0"
+35.}
